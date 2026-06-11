@@ -148,17 +148,6 @@ body {
 .field input[type="file"] {
   width: 100%; padding: 6px; font-size: 12px; border: 1px dashed #cbd5e1; border-radius: var(--radius-sm); background: #fff;
 }
-.image-transfer-meta {
-  min-height: 34px;
-  padding: 8px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  background: #f8fafc;
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.35;
-  word-break: break-all;
-}
 .check-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .check { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
 .check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); }

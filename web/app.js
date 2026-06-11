@@ -5,8 +5,6 @@ let autoRefreshTimer = null;
 let nextRefreshAt = null;
 let lastRefreshAt = null;
 let customImage = null;
-let transferImage = null;
-let transferImageFileName = '';
 let isSending = false;
 let lastTransferStatusAt = 0;
 let templateFromUrl = false;
@@ -79,6 +77,7 @@ function applyUserSettings(s) {
   const urlTemplate = new URLSearchParams(window.location.search).get('template');
   storedTemplateIdBeforeUrlPreview = s.templateId || 'handdraw_card';
   templateFromUrl = Boolean(urlTemplate && previewTemplates[urlTemplate]);
+  storedTemplateIdBeforeUrlPreview = previewTemplates[storedTemplateIdBeforeUrlPreview] ? storedTemplateIdBeforeUrlPreview : 'handdraw_card';
   const templateId = templateFromUrl ? urlTemplate : storedTemplateIdBeforeUrlPreview;
   if (getEl('cfg-template')) getEl('cfg-template').value = templateId;
   refreshIntervalMinutes = s.refreshInterval; autoRefreshEnabled = s.autoRefresh;
@@ -138,166 +137,6 @@ function getSevenDayRemainingDays(q, sevenDayPercent) {
     if (!Number.isNaN(n)) return Math.min(7, Math.max(0, Math.round(n)));
   }
   return Math.min(7, Math.max(0, Math.ceil((sevenDayPercent || 0) / 100 * 7)));
-}
-
-function isImageTransferTemplate() {
-  return getEl('cfg-template')?.value === 'image_transfer_card';
-}
-
-function drawImageTransferPlaceholder(ctx, state) {
-  const { W, H, BLACK, RED, WHITE } = state;
-  ctx.fillStyle = WHITE;
-  ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = BLACK;
-  ctx.lineWidth = Math.max(2, Math.round(Math.min(W, H) / 120));
-  ctx.strokeRect(10, 10, W - 20, H - 20);
-  ctx.fillStyle = BLACK;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `bold ${Math.max(16, Math.round(Math.min(W, H) / 10))}px "Microsoft YaHei", sans-serif`;
-  ctx.fillText('请选择图片', W / 2, H / 2 - Math.max(12, H * 0.06));
-  ctx.fillStyle = RED;
-  ctx.font = `bold ${Math.max(12, Math.round(Math.min(W, H) / 18))}px "Microsoft YaHei", sans-serif`;
-  ctx.fillText('预览即发送到墨水屏的三色画面', W / 2, H / 2 + Math.max(14, H * 0.08));
-  ctx.textAlign = 'left';
-}
-
-function rgbToHsv(r, g, b) {
-  const rr = r / 255;
-  const gg = g / 255;
-  const bb = b / 255;
-  const max = Math.max(rr, gg, bb);
-  const min = Math.min(rr, gg, bb);
-  const d = max - min;
-  let h = 0;
-  if (d !== 0) {
-    if (max === rr) h = ((gg - bb) / d) % 6;
-    else if (max === gg) h = (bb - rr) / d + 2;
-    else h = (rr - gg) / d + 4;
-    h *= 60;
-    if (h < 0) h += 360;
-  }
-  const s = max === 0 ? 0 : d / max;
-  return { h, s, v: max };
-}
-
-function drawOptimizedImageForEpaper(ctx, img, W, H, colorMode) {
-  const workCanvas = document.createElement('canvas');
-  workCanvas.width = W;
-  workCanvas.height = H;
-  const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
-  workCtx.fillStyle = '#FFFFFF';
-  workCtx.fillRect(0, 0, W, H);
-  workCtx.imageSmoothingEnabled = true;
-  workCtx.imageSmoothingQuality = 'high';
-
-  const scale = Math.min(W / img.naturalWidth, H / img.naturalHeight);
-  const drawW = Math.max(1, Math.round(img.naturalWidth * scale));
-  const drawH = Math.max(1, Math.round(img.naturalHeight * scale));
-  const dx = Math.floor((W - drawW) / 2);
-  const dy = Math.floor((H - drawH) / 2);
-  workCtx.filter = 'blur(0.35px)';
-  workCtx.drawImage(img, dx, dy, drawW, drawH);
-  workCtx.filter = 'none';
-
-  const src = workCtx.getImageData(0, 0, W, H);
-  const data = src.data;
-  const luma = new Float32Array(W * H);
-  const saturation = new Float32Array(W * H);
-
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const idx = (y * W + x) * 4;
-      const r = data[idx];
-      const g = data[idx + 1];
-      const b = data[idx + 2];
-      const p = y * W + x;
-      luma[p] = r * 0.299 + g * 0.587 + b * 0.114;
-      saturation[p] = Math.max(r, g, b) - Math.min(r, g, b);
-    }
-  }
-
-  const out = workCtx.createImageData(W, H);
-  const dst = out.data;
-
-  // 先降到低分辨率网格，再整块填色，形成稳定的像素风而不是碎点或线稿。
-  const pixelSize = Math.max(2, Math.round(Math.min(W, H) / 90));
-  for (let by = 0; by < H; by += pixelSize) {
-    for (let bx = 0; bx < W; bx += pixelSize) {
-      const x2 = Math.min(W, bx + pixelSize);
-      const y2 = Math.min(H, by + pixelSize);
-      let sumR = 0;
-      let sumG = 0;
-      let sumB = 0;
-      let sumLuma = 0;
-      let sumSat = 0;
-      let sumEdge = 0;
-      let count = 0;
-
-      for (let y = by; y < y2; y++) {
-        for (let x = bx; x < x2; x++) {
-          const idx = (y * W + x) * 4;
-          const xm = Math.max(0, x - 1);
-          const xp = Math.min(W - 1, x + 1);
-          const ym = Math.max(0, y - 1);
-          const yp = Math.min(H - 1, y + 1);
-          const gx = (luma[ym * W + xp] + 2 * luma[y * W + xp] + luma[yp * W + xp])
-            - (luma[ym * W + xm] + 2 * luma[y * W + xm] + luma[yp * W + xm]);
-          const gy = (luma[yp * W + xm] + 2 * luma[yp * W + x] + luma[yp * W + xp])
-            - (luma[ym * W + xm] + 2 * luma[ym * W + x] + luma[ym * W + xp]);
-
-          sumR += data[idx];
-          sumG += data[idx + 1];
-          sumB += data[idx + 2];
-          sumLuma += luma[y * W + x];
-          sumSat += saturation[y * W + x];
-          sumEdge += Math.hypot(gx, gy) / 4;
-          count++;
-        }
-      }
-
-      const r = sumR / count;
-      const g = sumG / count;
-      const b = sumB / count;
-      const currentLuma = sumLuma / count;
-      const currentSat = sumSat / count;
-      const edge = sumEdge / count;
-      const hsv = rgbToHsv(r, g, b);
-      const skinLike = hsv.h >= 8 && hsv.h <= 55 && hsv.s < 0.32 && currentLuma > 165;
-      const redLike = r > 125 && r > g * 1.12 && r > b * 1.08 && currentSat > 32 && currentLuma < 225 && !(skinLike && currentLuma > 190);
-      const purpleLike = r > g * 1.04 && b > g * 1.04 && currentSat > 26 && currentLuma < 220 && !skinLike;
-      const coloredLike = hsv.s > 0.18 && currentLuma < 220 && !skinLike;
-      let fill = [255, 255, 255];
-
-      if (colorMode === 'bwr' && (redLike || purpleLike || coloredLike)) {
-        fill = [255, 0, 0];
-      } else if (redLike || purpleLike || coloredLike || currentLuma < 148 || edge > 13 || (currentSat > 34 && currentLuma < 185 && !skinLike)) {
-        fill = [0, 0, 0];
-      } else if (edge > 8 && currentLuma < 235) {
-        fill = [0, 0, 0];
-      }
-
-      for (let y = by; y < y2; y++) {
-        for (let x = bx; x < x2; x++) {
-          const idx = (y * W + x) * 4;
-          dst[idx] = fill[0];
-          dst[idx + 1] = fill[1];
-          dst[idx + 2] = fill[2];
-          dst[idx + 3] = 255;
-        }
-      }
-    }
-  }
-
-  ctx.putImageData(out, 0, 0);
-}
-
-function drawImageTransferTemplate(ctx, state) {
-  if (!transferImage) {
-    drawImageTransferPlaceholder(ctx, state);
-    return;
-  }
-  drawOptimizedImageForEpaper(ctx, transferImage, state.W, state.H, getEl('cfg-color-mode').value);
 }
 
 // ----------------------------------------------------
@@ -421,12 +260,6 @@ const previewTemplates = {
     label: '今日 Token',
     render(ctx, state, helpers) {
       previewTemplates.handdraw_card.render(ctx, { ...state, useDailyTokenRow: true }, helpers);
-    }
-  },
-  image_transfer_card: {
-    label: '图片传输',
-    render(ctx, state) {
-      drawImageTransferTemplate(ctx, state);
     }
   }
 };
@@ -952,7 +785,6 @@ async function connectDevice() {
 
 async function sendToDevice() {
   if (isSending) { addLog('正在发送中，请等待当前传输完成'); return; }
-  if (isImageTransferTemplate() && !transferImage) { addLog('图片传输模板需要先选择图片，未发送空白画面'); return; }
   if (!navigator.bluetooth) { addLog('当前浏览器不支持 Web Bluetooth，请使用 Chrome 或 Edge，并通过 localhost/HTTPS 打开页面'); return; }
   if (!EPD.isConnected()) { setBleStatus('未连接', 'color-warn'); addLog('请先点击“连接设备”，选择墨水屏后再发送'); return; }
   try {
@@ -997,64 +829,8 @@ function handleImageUpload(e) {
 }
 function resetIcon() { customImage = null; const ic = getEl('hidden-icon-canvas'); ic.width = 0; ic.height = 0; renderPreview(); addLog('图标已重置'); }
 
-function handleTransferImageUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    addLog('请选择图片文件');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    const img = new Image();
-    img.onload = function() {
-      transferImage = img;
-      transferImageFileName = file.name;
-      updateTransferImageMeta();
-      renderPreview();
-      saveUserSettings();
-      addLog('图片已优化为墨水屏三色预览');
-    };
-    img.onerror = function() {
-      addLog('图片读取失败，请换一张图片重试');
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function resetTransferImage() {
-  transferImage = null;
-  transferImageFileName = '';
-  const input = getEl('transfer-image-upload');
-  if (input) input.value = '';
-  updateTransferImageMeta();
-  renderPreview();
-  addLog('图片传输内容已清除');
-}
-
-function updateTransferImageMeta() {
-  const meta = getEl('transfer-image-meta');
-  if (!meta) return;
-  if (!transferImage) {
-    meta.textContent = '未选择图片';
-    return;
-  }
-  meta.textContent = `${transferImageFileName || '已选择图片'} · ${transferImage.naturalWidth}x${transferImage.naturalHeight} → ${getScreenSize().w}x${getScreenSize().h}`;
-}
-
-function updateTemplateFieldVisibility() {
-  const isImage = isImageTransferTemplate();
-  const quotaFields = getEl('quota-template-fields');
-  const imageFields = getEl('image-transfer-fields');
-  if (quotaFields) quotaFields.hidden = isImage;
-  if (imageFields) imageFields.hidden = !isImage;
-  updateTransferImageMeta();
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   applyUserSettings(loadUserSettings());
-  updateTemplateFieldVisibility();
   EPD.onLog(addLog);
   EPD.onStatus((msg) => {
     setBleStatus('发送中 ' + msg, 'color-primary');
@@ -1069,12 +845,11 @@ document.addEventListener('DOMContentLoaded', () => {
   ['cfg-title', 'cfg-headline', 'cfg-subheadline', 'cfg-highlight'].forEach(id => getEl(id).addEventListener('input', () => { renderPreview(); saveUserSettings(); }));
   ['cfg-screen', 'cfg-color-mode', 'cfg-invert-bw', 'cfg-invert-red'].forEach(id => getEl(id).addEventListener('change', () => { updateScreenSize(); renderPreview(); saveUserSettings(); }));
   getEl('cfg-driver').addEventListener('change', () => { saveUserSettings(); });
-  if (getEl('cfg-template')) getEl('cfg-template').addEventListener('change', () => { templateFromUrl = false; storedTemplateIdBeforeUrlPreview = getEl('cfg-template').value; updateTemplateFieldVisibility(); renderPreview(); saveUserSettings(); });
+  if (getEl('cfg-template')) getEl('cfg-template').addEventListener('change', () => { templateFromUrl = false; storedTemplateIdBeforeUrlPreview = getEl('cfg-template').value; renderPreview(); saveUserSettings(); });
   getEl('cfg-auto-refresh').addEventListener('change', toggleAutoRefresh);
   getEl('cfg-refresh-interval').addEventListener('change', onRefreshIntervalChange);
   getEl('cfg-custom-min').addEventListener('input', () => { refreshIntervalMinutes = parseInt(getEl('cfg-custom-min').value) || 30; if (autoRefreshEnabled) startAutoRefresh(); saveUserSettings(); });
   getEl('icon-upload').addEventListener('change', handleImageUpload);
-  getEl('transfer-image-upload').addEventListener('change', handleTransferImageUpload);
   setInterval(updateCountdown, 1000);
   refreshData();
 });

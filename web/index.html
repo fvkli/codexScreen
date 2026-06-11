@@ -39,7 +39,6 @@
           <select id="cfg-template">
             <option value="handdraw_card" selected>手绘卡片</option>
             <option value="token_daily_card">今日 Token</option>
-            <option value="image_transfer_card">图片传输</option>
           </select>
         </div>
         <div id="quota-template-fields">
@@ -50,11 +49,6 @@
           
           <div class="field"><label>自定义图标(可选)</label><input type="file" id="icon-upload" accept=".png,.jpg,.jpeg,.webp"></div>
           <button class="btn btn-outline btn-full" onclick="resetIcon()">重置默认树叶图标</button>
-        </div>
-        <div id="image-transfer-fields" hidden>
-          <div class="field"><label>传输图片</label><input type="file" id="transfer-image-upload" accept=".png,.jpg,.jpeg,.webp"></div>
-          <div class="image-transfer-meta" id="transfer-image-meta">未选择图片</div>
-          <button class="btn btn-outline btn-full" onclick="resetTransferImage()">清除图片</button>
         </div>
       </div>
 

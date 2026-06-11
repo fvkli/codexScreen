@@ -1,9 +1,4 @@
-# Codex 墨水屏额度状态牌 — 新线程交接文档
-
-> 更新时间：2026-06-09  
-> 当前真实项目目录：`D:\Code\python\codex+_+`  
-> 重要说明：历史对话里曾使用过 `D:\Code\nRF52811\codex-epaper-quota` 和 `D:\Code\python\codex-epaper-quota`，但当前环境实际项目目录已经变为 `D:\Code\python\codex+_+`。新线程必须以当前真实目录为准。  
-> 进入项目后必须先读取并遵守根目录 `AGENTS.md`。
+# Codex 墨水屏额度状态牌 
 
 ---
 
