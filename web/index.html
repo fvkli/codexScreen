@@ -39,7 +39,30 @@
           <select id="cfg-template">
             <option value="handdraw_card" selected>手绘卡片</option>
             <option value="token_daily_card">今日 Token</option>
+            <option value="custom_token_daily_card">自定义今日token</option>
           </select>
+        </div>
+        <div class="theme-block">
+          <div class="theme-head">
+            <label>状态主题</label>
+            <button type="button" class="btn btn-outline btn-mini" id="btn-add-status-theme">新增</button>
+          </div>
+          <select id="cfg-status-theme"></select>
+          <div id="status-theme-editor" class="theme-editor"></div>
+        </div>
+        <div class="theme-block">
+          <div class="theme-head">
+            <label>主文案主题</label>
+            <button type="button" class="btn btn-outline btn-mini" id="btn-add-headline-theme">新增</button>
+          </div>
+          <select id="cfg-headline-theme"></select>
+          <div id="headline-theme-editor" class="theme-editor"></div>
+        </div>
+        <div class="theme-block">
+          <div class="theme-head">
+            <label>自动图标主题</label>
+          </div>
+          <select id="cfg-auto-icon-theme"></select>
         </div>
         <div id="quota-template-fields">
           <div class="field"><label>大标题</label><input type="text" id="cfg-title" value="Codex plus"></div>

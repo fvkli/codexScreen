@@ -24,7 +24,7 @@ const userDefaults = {
   title: 'Codex plus', headline: '省着点用...', subHeadline: '当前能量消耗较快，建议控制使用频率', highlightText: '省着点',
   driver: '03', screenPreset: '4.2_400_300', colorMode: 'bwr',
   refreshInterval: 30, autoRefresh: false, invertBlack: false, invertRed: false,
-  templateId: 'handdraw_card',
+  templateId: 'handdraw_card', autoIconThemeId: 'brain',
 };
 
 const screenPresets = {
@@ -32,15 +32,141 @@ const screenPresets = {
   '2.9_128_296': { w: 296, h: 128 }, '4.2_400_300': { w: 400, h: 300 },
 };
 
+const autoIconThemes = [
+  { id: 'brain', label: '脑量涂鸦' },
+  { id: 'cat', label: '元气小猫' },
+  { id: 'bunny', label: '打气兔兔' },
+  { id: 'robot', label: '乖巧机器人' },
+  { id: 'coffee', label: '咖啡小杯' },
+  { id: 'cloud', label: '软软小云' },
+];
+
+const quotaBands = [
+  { id: 'high', label: '81-100', min: 81, max: 100 },
+  { id: 'healthy', label: '61-80', min: 61, max: 80 },
+  { id: 'warm', label: '41-60', min: 41, max: 60 },
+  { id: 'hot', label: '21-40', min: 21, max: 40 },
+  { id: 'low', label: '0-20', min: 0, max: 20 },
+];
+
+const defaultStatusThemes = [
+  { id: 'status_default', name: '满血复活主题', bands: { high: '满血复活', healthy: '电量健康', warm: '脑袋温热', hot: '脑袋发烫', low: '人都麻了' } },
+  { id: 'status_xiuxian', name: '灵气充盈主题', bands: { high: '灵气充盈', healthy: '道心稳定', warm: '丹田微热', hot: '经脉冒烟', low: '原地渡劫' } },
+  { id: 'status_work', name: '工位满电主题', bands: { high: '工位满电', healthy: '还能加班', warm: '开始摸鱼', hot: '快到极限', low: '下班保命' } },
+  { id: 'status_mecha', name: '核心满载主题', bands: { high: '核心满载', healthy: '推进稳定', warm: '装甲升温', hot: '警报闪烁', low: '紧急停机' } },
+  { id: 'status_coffee', name: '咖力爆棚主题', bands: { high: '咖力爆棚', healthy: '杯中有劲', warm: '苦味上头', hot: '手有点抖', low: '杯底见光' } },
+];
+
+const defaultHeadlineThemes = [
+  { id: 'headline_default', name: '随便造主题', bands: { high: { headline: '随便造！！', highlight: '随便造' }, healthy: { headline: '还能打！！', highlight: '还能打' }, warm: { headline: '省着点用...', highlight: '省着点' }, hot: { headline: '别猛冲了！！', highlight: '别猛冲' }, low: { headline: '快歇会儿！！', highlight: '快歇会儿' } } },
+  { id: 'headline_boss', name: '放开干主题', bands: { high: { headline: '放开干！！', highlight: '放开干' }, healthy: { headline: '继续推进！！', highlight: '继续' }, warm: { headline: '稳一点来...', highlight: '稳一点' }, hot: { headline: '先别硬刚！！', highlight: '别硬刚' }, low: { headline: '这锅别接！！', highlight: '别接' } } },
+  { id: 'headline_daoist', name: '灵感爆棚主题', bands: { high: { headline: '灵感爆棚！！', highlight: '灵感' }, healthy: { headline: '代码有光！！', highlight: '有光' }, warm: { headline: '道心别乱...', highlight: '别乱' }, hot: { headline: '天机快漏了！！', highlight: '快漏' }, low: { headline: '速速收手！！', highlight: '收手' } } },
+  { id: 'headline_power', name: '火力全开主题', bands: { high: { headline: '火力全开！！', highlight: '火力' }, healthy: { headline: '稳定供能！！', highlight: '稳定' }, warm: { headline: '降低负载...', highlight: '降低' }, hot: { headline: '机组过热！！', highlight: '过热' }, low: { headline: '马上断电！！', highlight: '断电' } } },
+  { id: 'headline_partner', name: '今天很勇主题', bands: { high: { headline: '今天很勇！！', highlight: '很勇' }, healthy: { headline: '状态不错！！', highlight: '不错' }, warm: { headline: '慢慢来吧...', highlight: '慢慢来' }, hot: { headline: '先喝口水！！', highlight: '喝口水' }, low: { headline: '别卷了！！', highlight: '别卷' } } },
+];
+
+let quotaThemeSettings = normalizeThemeSettings();
+
 function getEl(id) { return document.getElementById(id); }
 
 function getQuotaCopy(percent) {
+  const band = getQuotaBand(percent);
+  const statusTheme = getCurrentStatusTheme();
+  const headlineTheme = getCurrentHeadlineTheme();
+  const headlineCopy = headlineTheme.bands[band.id] || {};
+  return {
+    status: statusTheme.bands[band.id] || defaultStatusThemes[0].bands[band.id],
+    headline: headlineCopy.headline || defaultHeadlineThemes[0].bands[band.id].headline,
+    highlight: headlineCopy.highlight || defaultHeadlineThemes[0].bands[band.id].highlight,
+  };
+}
+
+function cloneData(data) {
+  return JSON.parse(JSON.stringify(data));
+}
+
+function normalizeThemeSettings(raw = {}) {
+  const statusThemes = Array.isArray(raw.statusThemes) && raw.statusThemes.length ? raw.statusThemes : cloneData(defaultStatusThemes);
+  const headlineThemes = Array.isArray(raw.headlineThemes) && raw.headlineThemes.length ? raw.headlineThemes : cloneData(defaultHeadlineThemes);
+  const selectedStatusThemeId = statusThemes.some(t => t.id === raw.selectedStatusThemeId) ? raw.selectedStatusThemeId : statusThemes[0].id;
+  const selectedHeadlineThemeId = headlineThemes.some(t => t.id === raw.selectedHeadlineThemeId) ? raw.selectedHeadlineThemeId : headlineThemes[0].id;
+
+  return {
+    statusThemes: statusThemes.map(normalizeStatusTheme),
+    headlineThemes: headlineThemes.map(normalizeHeadlineTheme),
+    selectedStatusThemeId,
+    selectedHeadlineThemeId,
+  };
+}
+
+function normalizeStatusTheme(theme) {
+  const fallback = defaultStatusThemes[0];
+  const bands = {};
+  quotaBands.forEach((band) => {
+    bands[band.id] = String(theme?.bands?.[band.id] || fallback.bands[band.id] || '');
+  });
+  return { id: theme.id || `status_${Date.now()}`, name: theme.name || buildThemeNameFromStatusBands(bands), bands };
+}
+
+function normalizeHeadlineTheme(theme) {
+  const fallback = defaultHeadlineThemes[0];
+  const bands = {};
+  quotaBands.forEach((band) => {
+    const copy = theme?.bands?.[band.id] || {};
+    bands[band.id] = {
+      headline: String(copy.headline || fallback.bands[band.id].headline || ''),
+      highlight: String(copy.highlight || fallback.bands[band.id].highlight || ''),
+    };
+  });
+  return { id: theme.id || `headline_${Date.now()}`, name: theme.name || buildThemeNameFromHeadlineBands(bands), bands };
+}
+
+function loadThemeSettings() {
+  const saved = localStorage.getItem('codex-epaper-theme-settings');
+  if (!saved) return;
+  try {
+    quotaThemeSettings = normalizeThemeSettings(JSON.parse(saved));
+  } catch {
+    quotaThemeSettings = normalizeThemeSettings();
+  }
+}
+
+function saveThemeSettings() {
+  localStorage.setItem('codex-epaper-theme-settings', JSON.stringify(quotaThemeSettings));
+}
+
+function getQuotaBand(percent) {
   const pct = Math.max(0, Math.min(100, Number(percent) || 0));
-  if (pct >= 81) return { status: '满血复活', headline: '随便造！！', highlight: '随便造' };
-  if (pct >= 61) return { status: '电量健康', headline: '还能打！！', highlight: '还能打' };
-  if (pct >= 41) return { status: '脑袋温热', headline: '省着点用...', highlight: '省着点' };
-  if (pct >= 21) return { status: '脑袋发烫', headline: '别猛冲了！！', highlight: '别猛冲' };
-  return { status: '人都麻了', headline: '快歇会儿！！', highlight: '快歇会儿' };
+  return quotaBands.find(band => pct >= band.min && pct <= band.max) || quotaBands[quotaBands.length - 1];
+}
+
+function getCurrentStatusTheme() {
+  return quotaThemeSettings.statusThemes.find(t => t.id === quotaThemeSettings.selectedStatusThemeId) || quotaThemeSettings.statusThemes[0] || defaultStatusThemes[0];
+}
+
+function getCurrentHeadlineTheme() {
+  return quotaThemeSettings.headlineThemes.find(t => t.id === quotaThemeSettings.selectedHeadlineThemeId) || quotaThemeSettings.headlineThemes[0] || defaultHeadlineThemes[0];
+}
+
+function stripThemePunctuation(text) {
+  return String(text || '').replace(/[!！.。…?？\s]/g, '') || '新主题';
+}
+
+function uniqueThemeName(baseName, themes) {
+  const existing = new Set(themes.map(t => t.name));
+  if (!existing.has(baseName)) return baseName;
+  let index = 2;
+  while (existing.has(`${baseName}${index}`)) index++;
+  return `${baseName}${index}`;
+}
+
+function buildThemeNameFromStatusBands(bands) {
+  return `${stripThemePunctuation(bands.high)}主题`;
+}
+
+function buildThemeNameFromHeadlineBands(bands) {
+  const high = bands.high || {};
+  return `${stripThemePunctuation(high.highlight || high.headline)}主题`;
 }
 
 function formatDailyTokens(tokens) {
@@ -64,6 +190,7 @@ function saveUserSettings() {
     autoRefresh: autoRefreshEnabled, invertBlack: getEl('cfg-invert-bw').checked, 
     invertRed: getEl('cfg-invert-red').checked,
     templateId: templateFromUrl ? storedTemplateIdBeforeUrlPreview : (getEl('cfg-template')?.value || 'handdraw_card'),
+    autoIconThemeId: getEl('cfg-auto-icon-theme')?.value || 'brain',
   };
   localStorage.setItem('codex-epaper-settings', JSON.stringify(s));
 }
@@ -74,6 +201,7 @@ function applyUserSettings(s) {
   getEl('cfg-highlight').value = s.highlightText; getEl('cfg-driver').value = s.driver;
   getEl('cfg-screen').value = s.screenPreset; getEl('cfg-color-mode').value = s.colorMode;
   getEl('cfg-invert-bw').checked = s.invertBlack; getEl('cfg-invert-red').checked = s.invertRed;
+  if (getEl('cfg-auto-icon-theme')) getEl('cfg-auto-icon-theme').value = autoIconThemes.some(t => t.id === s.autoIconThemeId) ? s.autoIconThemeId : 'brain';
   const urlTemplate = new URLSearchParams(window.location.search).get('template');
   storedTemplateIdBeforeUrlPreview = s.templateId || 'handdraw_card';
   templateFromUrl = Boolean(urlTemplate && previewTemplates[urlTemplate]);
@@ -149,7 +277,7 @@ const previewTemplates = {
       const { W, H, SX, SY, S, X, Y, SS, BLACK, RED, WHITE, SOFT, q, fiveHourPercent, quotaCopy,
         title, headline, subline, hlText, sevenDayPercent, remainingDays,
         dateText, updatedAt, nextAt, bleConnected, bleText } = state;
-      const { setFont, drawWobbleLine, drawBox, drawRichText, drawBrainIcon,
+      const { setFont, drawWobbleLine, drawBox, drawRichText, drawAutoIcon,
         drawProgressBar, drawDots, drawHeart, drawDailyTokenRow, drawBottomCentered, clampNumber, getSevenDayRemainingDays } = helpers;
 
       // 只用黑/红/白，保证 canvasToEpaperPlanes 能稳定转成黑白红三色位图。
@@ -171,7 +299,17 @@ const previewTemplates = {
       drawWobbleLine(18, 53, 382, 53, BLACK, 1.4);
 
       // 主文案区域
-      drawBrainIcon(73, 93, 70, fiveHourPercent);
+      if (state.useCustomIcon) {
+        // 自定义模板模式：仅在用户上传图标时绘制，否则留空
+        if (customImage) {
+          const ic = document.getElementById('hidden-icon-canvas');
+          if (ic && ic.width > 0) {
+            ctx.drawImage(ic, X(40), Y(68), X(64), Y(64));
+          }
+        }
+      } else {
+        drawAutoIcon(state.autoIconThemeId, 73, 93, 70, fiveHourPercent);
+      }
       drawRichText(headline, 238, 104, headline.length > 8 ? 30 : 34, 'bold', hlText);
       ctx.strokeStyle = RED;
       ctx.lineWidth = SS(1.4);
@@ -261,6 +399,12 @@ const previewTemplates = {
     render(ctx, state, helpers) {
       previewTemplates.handdraw_card.render(ctx, { ...state, useDailyTokenRow: true }, helpers);
     }
+  },
+  custom_token_daily_card: {
+    label: '自定义今日token',
+    render(ctx, state, helpers) {
+      previewTemplates.handdraw_card.render(ctx, { ...state, useDailyTokenRow: true, useCustomIcon: true }, helpers);
+    }
   }
 };
 
@@ -286,11 +430,18 @@ function buildRenderState() {
   const fiveHourPercent = clampNumber(q.five_hour_percent, 0, 100);
   const quotaCopy = getQuotaCopy(fiveHourPercent);
   const title = getEl('cfg-title').value || q.title || 'Codex';
-  const headline = quotaCopy.headline;
+  const currentTemplateId = getEl('cfg-template')?.value || 'handdraw_card';
+  const isCustomTemplate = currentTemplateId === 'custom_token_daily_card';
+  const autoIconThemeId = getEl('cfg-auto-icon-theme')?.value || 'brain';
+  const headline = isCustomTemplate
+    ? (getEl('cfg-headline').value || '这里是主文案')
+    : quotaCopy.headline;
   const subline = getEl('cfg-subheadline').value || q.subheadline || q.subHeadline || '';
   const inputHighlight = (getEl('cfg-highlight').value || '').trim();
   const autoHighlight = quotaCopy.highlight || ['麻', '过载', '温热', '危险', '枯竭'].find(t => headline.includes(t)) || '';
-  const hlText = headline.includes(inputHighlight) ? inputHighlight : (q.highlight_text || q.highlightText || autoHighlight);
+  const hlText = isCustomTemplate
+    ? inputHighlight
+    : (headline.includes(inputHighlight) ? inputHighlight : (q.highlight_text || q.highlightText || autoHighlight));
 
   const sevenDayPercent = clampNumber(q.seven_day_percent, 0, 100);
   const remainingDays = getSevenDayRemainingDays(q, sevenDayPercent);
@@ -303,7 +454,7 @@ function buildRenderState() {
 
   return { W, H, SX, SY, S, X, Y, SS, BLACK, RED, WHITE, SOFT, q, fiveHourPercent, quotaCopy,
     title, headline, subline, hlText, sevenDayPercent, remainingDays,
-    dateText, updatedAt, nextAt, bleConnected, bleText, dailyTokenText };
+    dateText, updatedAt, nextAt, bleConnected, bleText, dailyTokenText, autoIconThemeId };
 }
 
 function createRenderHelpers(canvas) {
@@ -542,6 +693,188 @@ function createRenderHelpers(canvas) {
     shortLine(12, 35, 17, 45, BLACK, 1.8);
   }
 
+  function drawAutoIcon(themeId, cx, cy, size, percent) {
+    if (!themeId || themeId === 'brain') {
+      drawBrainIcon(cx, cy, size, percent);
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const k = size / 80;
+    const pct = clampNumber(percent, 0, 100);
+    function px(v) { return X(cx + v * k); }
+    function py(v) { return Y(cy + v * k); }
+    function sw(v) { return SS(v * k); }
+    function line(x1, y1, x2, y2, color = BLACK, width = 2) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = sw(width);
+      ctx.beginPath();
+      ctx.moveTo(px(x1), py(y1));
+      ctx.lineTo(px(x2), py(y2));
+      ctx.stroke();
+    }
+    function sparkle(x, y, r = 6, color = RED) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = sw(2);
+      ctx.beginPath();
+      ctx.moveTo(px(x), py(y - r));
+      ctx.lineTo(px(x), py(y + r));
+      ctx.moveTo(px(x - r), py(y));
+      ctx.lineTo(px(x + r), py(y));
+      ctx.moveTo(px(x - r * 0.6), py(y - r * 0.6));
+      ctx.lineTo(px(x + r * 0.6), py(y + r * 0.6));
+      ctx.moveTo(px(x + r * 0.6), py(y - r * 0.6));
+      ctx.lineTo(px(x - r * 0.6), py(y + r * 0.6));
+      ctx.stroke();
+    }
+    function heart(x, y, scale = 1) {
+      ctx.strokeStyle = RED;
+      ctx.fillStyle = WHITE;
+      ctx.lineWidth = sw(2);
+      ctx.beginPath();
+      ctx.moveTo(px(x), py(y + 8 * scale));
+      ctx.bezierCurveTo(px(x - 18 * scale), py(y - 4 * scale), px(x - 8 * scale), py(y - 18 * scale), px(x), py(y - 7 * scale));
+      ctx.bezierCurveTo(px(x + 8 * scale), py(y - 18 * scale), px(x + 18 * scale), py(y - 4 * scale), px(x), py(y + 8 * scale));
+      ctx.fill();
+      ctx.stroke();
+    }
+    function smile(y = 14) {
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = sw(2);
+      ctx.beginPath();
+      ctx.moveTo(px(-10), py(y));
+      ctx.quadraticCurveTo(px(0), py(y + 8), px(10), py(y));
+      ctx.stroke();
+    }
+    function moodMark() {
+      if (pct >= 61) sparkle(36, -30, 7, RED);
+      else if (pct >= 21) {
+        line(35, -28, 47, -38, RED, 2);
+        line(41, -23, 54, -26, RED, 2);
+      } else {
+        sparkle(37, -26, 5, RED);
+        line(-42, 35, -54, 42, BLACK, 1.8);
+      }
+    }
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = WHITE;
+    ctx.strokeStyle = BLACK;
+
+    if (themeId === 'cat') {
+      ctx.lineWidth = sw(2.4);
+      ctx.beginPath();
+      ctx.moveTo(px(-30), py(-9));
+      ctx.lineTo(px(-20), py(-34));
+      ctx.lineTo(px(-5), py(-18));
+      ctx.lineTo(px(17), py(-19));
+      ctx.lineTo(px(31), py(-34));
+      ctx.lineTo(px(35), py(-8));
+      ctx.quadraticCurveTo(px(36), py(28), px(0), py(35));
+      ctx.quadraticCurveTo(px(-37), py(28), px(-30), py(-9));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = BLACK;
+      ctx.beginPath(); ctx.ellipse(px(-13), py(0), sw(2.8), sw(4), 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(px(13), py(0), sw(2.8), sw(4), 0, 0, Math.PI * 2); ctx.fill();
+      line(-5, 9, 0, 13, BLACK, 1.7);
+      line(5, 9, 0, 13, BLACK, 1.7);
+      line(-42, 8, -22, 12, BLACK, 1.5);
+      line(-42, 20, -22, 18, BLACK, 1.5);
+      line(22, 12, 42, 8, BLACK, 1.5);
+      line(22, 18, 42, 20, BLACK, 1.5);
+      heart(31, 28, 0.45);
+      moodMark();
+    } else if (themeId === 'bunny') {
+      ctx.lineWidth = sw(2.4);
+      ctx.beginPath();
+      ctx.ellipse(px(-14), py(-27), sw(9), sw(24), -0.24, 0, Math.PI * 2);
+      ctx.ellipse(px(14), py(-27), sw(9), sw(24), 0.24, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(px(0), py(8), sw(32), sw(29), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = BLACK;
+      ctx.beginPath(); ctx.ellipse(px(-11), py(1), sw(2.7), sw(3.8), 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(px(11), py(1), sw(2.7), sw(3.8), 0, 0, Math.PI * 2); ctx.fill();
+      sparkle(-27, 18, 4, RED);
+      sparkle(27, 18, 4, RED);
+      smile(12);
+      line(-38, 34, -50, 43, BLACK, 1.8);
+      line(38, 34, 50, 43, BLACK, 1.8);
+      moodMark();
+    } else if (themeId === 'robot') {
+      ctx.lineWidth = sw(2.3);
+      ctx.strokeRect(px(-29), py(-18), sw(58), sw(48));
+      ctx.beginPath();
+      ctx.moveTo(px(-20), py(-18));
+      ctx.quadraticCurveTo(px(0), py(-38), px(20), py(-18));
+      ctx.stroke();
+      line(0, -38, 0, -48, BLACK, 2);
+      sparkle(0, -54, 4, RED);
+      ctx.fillStyle = WHITE;
+      ctx.strokeStyle = RED;
+      ctx.lineWidth = sw(2);
+      ctx.beginPath(); ctx.ellipse(px(-13), py(0), sw(7), sw(7), 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(px(13), py(0), sw(7), sw(7), 0, 0, Math.PI * 2); ctx.stroke();
+      line(-11, 19, 11, 19, BLACK, 2);
+      line(-40, -2, -29, 5, BLACK, 2);
+      line(29, 5, 40, -2, BLACK, 2);
+      moodMark();
+    } else if (themeId === 'coffee') {
+      ctx.lineWidth = sw(2.4);
+      ctx.beginPath();
+      ctx.moveTo(px(-25), py(-8));
+      ctx.lineTo(px(20), py(-8));
+      ctx.quadraticCurveTo(px(16), py(31), px(-18), py(31));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(px(26), py(5), sw(12), sw(13), 0, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+      line(-37, 40, 38, 40, BLACK, 2);
+      line(-14, -22, -19, -39, RED, 2);
+      line(0, -20, -2, -40, BLACK, 2);
+      line(14, -22, 20, -38, RED, 2);
+      ctx.fillStyle = BLACK;
+      ctx.beginPath(); ctx.ellipse(px(-9), py(6), sw(2.5), sw(3.5), 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(px(7), py(6), sw(2.5), sw(3.5), 0, 0, Math.PI * 2); ctx.fill();
+      smile(15);
+      heart(37, -24, 0.42);
+    } else if (themeId === 'cloud') {
+      ctx.lineWidth = sw(2.5);
+      ctx.beginPath();
+      ctx.moveTo(px(-38), py(15));
+      ctx.quadraticCurveTo(px(-38), py(-4), px(-19), py(-3));
+      ctx.quadraticCurveTo(px(-13), py(-27), px(9), py(-22));
+      ctx.quadraticCurveTo(px(21), py(-34), px(36), py(-18));
+      ctx.quadraticCurveTo(px(54), py(-13), px(46), py(14));
+      ctx.quadraticCurveTo(px(16), py(25), px(-38), py(15));
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = BLACK;
+      ctx.beginPath(); ctx.ellipse(px(-9), py(4), sw(2.6), sw(3.5), 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(px(14), py(4), sw(2.6), sw(3.5), 0, 0, Math.PI * 2); ctx.fill();
+      smile(12);
+      sparkle(-42, -22, 6, RED);
+      sparkle(42, 30, 4, RED);
+      if (pct < 41) {
+        line(-18, 36, -25, 48, RED, 2);
+        line(2, 36, -5, 48, BLACK, 2);
+        line(22, 34, 15, 46, RED, 2);
+      }
+    } else {
+      drawBrainIcon(cx, cy, size, percent);
+    }
+
+    ctx.restore();
+  }
+
   function drawProgressBar(x, y, w, h, pct) {
     const ctx = canvas.getContext('2d');
     ctx.strokeStyle = BLACK;
@@ -728,7 +1061,7 @@ function createRenderHelpers(canvas) {
     ctx.textAlign = 'left';
   }
 
-  return { setFont, drawWobbleLine, drawBox, drawRichText, drawBrainIcon,
+  return { setFont, drawWobbleLine, drawBox, drawRichText, drawBrainIcon, drawAutoIcon,
     drawProgressBar, drawDots, drawHeart, drawDailyTokenRow, drawBottomCentered, clampNumber, getSevenDayRemainingDays };
 }
 
@@ -765,8 +1098,11 @@ async function refreshData() {
     codexQuotaStatus.highlight_text = quotaCopy.highlight;
     
     if (data.title !== undefined) getEl('cfg-title').value = data.title;
-    getEl('cfg-headline').value = quotaCopy.headline;
-    getEl('cfg-highlight').value = quotaCopy.highlight;
+    const currentTemplateId = getEl('cfg-template')?.value || 'handdraw_card';
+    if (currentTemplateId !== 'custom_token_daily_card') {
+      getEl('cfg-headline').value = quotaCopy.headline;
+      getEl('cfg-highlight').value = quotaCopy.highlight;
+    }
     getEl('cfg-subheadline').value = data.subheadline || data.subHeadline || '';
     
     updateQuotaDisplay(); addLog('额度数据已从后端刷新');
@@ -821,16 +1157,183 @@ function invertPlaneBytes(plane) { const out = new Uint8Array(plane.length); for
 function shouldInvertBlackPlaneForSend() { return getEl('cfg-invert-bw').checked || getEl('cfg-driver').value === '02'; }
 function shouldInvertRedPlaneForSend() { return getEl('cfg-invert-red').checked || getEl('cfg-driver').value === '02'; }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function fillThemeSelect(selectId, themes, selectedId) {
+  const select = getEl(selectId);
+  if (!select) return;
+  select.innerHTML = themes.map(theme => `<option value="${escapeHtml(theme.id)}">${escapeHtml(theme.name)}</option>`).join('');
+  select.value = selectedId;
+}
+
+function populateAutoIconThemeSelect(selectedId = 'brain') {
+  const select = getEl('cfg-auto-icon-theme');
+  if (!select) return;
+  select.innerHTML = autoIconThemes.map(theme => `<option value="${escapeHtml(theme.id)}">${escapeHtml(theme.label)}</option>`).join('');
+  select.value = autoIconThemes.some(theme => theme.id === selectedId) ? selectedId : 'brain';
+}
+
+function populateThemeControls() {
+  fillThemeSelect('cfg-status-theme', quotaThemeSettings.statusThemes, quotaThemeSettings.selectedStatusThemeId);
+  fillThemeSelect('cfg-headline-theme', quotaThemeSettings.headlineThemes, quotaThemeSettings.selectedHeadlineThemeId);
+  renderStatusThemeEditor();
+  renderHeadlineThemeEditor();
+}
+
+function syncThemeSelectLabels() {
+  fillThemeSelect('cfg-status-theme', quotaThemeSettings.statusThemes, quotaThemeSettings.selectedStatusThemeId);
+  fillThemeSelect('cfg-headline-theme', quotaThemeSettings.headlineThemes, quotaThemeSettings.selectedHeadlineThemeId);
+}
+
+function renderStatusThemeEditor() {
+  const editor = getEl('status-theme-editor');
+  if (!editor) return;
+  const theme = getCurrentStatusTheme();
+  editor.innerHTML = [
+    `<div class="theme-row"><label>名称</label><input type="text" id="cfg-status-theme-name" value="${escapeHtml(theme.name)}"></div>`,
+    ...quotaBands.map(band => `<div class="theme-row"><label>${band.label}</label><input type="text" class="status-band-input" data-band="${band.id}" value="${escapeHtml(theme.bands[band.id])}"></div>`)
+  ].join('');
+
+  getEl('cfg-status-theme-name')?.addEventListener('input', (ev) => {
+    theme.name = ev.target.value || buildThemeNameFromStatusBands(theme.bands);
+    syncThemeSelectLabels();
+    saveThemeSettings();
+  });
+  editor.querySelectorAll('.status-band-input').forEach(input => {
+    input.addEventListener('input', (ev) => {
+      theme.bands[ev.target.dataset.band] = ev.target.value;
+      saveThemeSettings();
+      applyThemeCopyToRuntime();
+    });
+  });
+}
+
+function renderHeadlineThemeEditor() {
+  const editor = getEl('headline-theme-editor');
+  if (!editor) return;
+  const theme = getCurrentHeadlineTheme();
+  editor.innerHTML = [
+    `<div class="theme-row"><label>名称</label><input type="text" id="cfg-headline-theme-name" value="${escapeHtml(theme.name)}"></div>`,
+    ...quotaBands.map((band) => {
+      const copy = theme.bands[band.id] || {};
+      return `<div class="theme-row"><label>${band.label}</label><div class="theme-duo"><input type="text" class="headline-band-input" data-band="${band.id}" data-field="headline" value="${escapeHtml(copy.headline)}"><input type="text" class="headline-band-input" data-band="${band.id}" data-field="highlight" value="${escapeHtml(copy.highlight)}"></div></div>`;
+    })
+  ].join('');
+
+  getEl('cfg-headline-theme-name')?.addEventListener('input', (ev) => {
+    theme.name = ev.target.value || buildThemeNameFromHeadlineBands(theme.bands);
+    syncThemeSelectLabels();
+    saveThemeSettings();
+  });
+  editor.querySelectorAll('.headline-band-input').forEach(input => {
+    input.addEventListener('input', (ev) => {
+      const bandId = ev.target.dataset.band;
+      const field = ev.target.dataset.field;
+      theme.bands[bandId][field] = ev.target.value;
+      saveThemeSettings();
+      applyThemeCopyToRuntime();
+    });
+  });
+}
+
+function createStatusTheme() {
+  const bands = cloneData(getCurrentStatusTheme().bands);
+  const theme = {
+    id: `status_custom_${Date.now()}`,
+    name: uniqueThemeName(buildThemeNameFromStatusBands(bands), quotaThemeSettings.statusThemes),
+    bands,
+  };
+  quotaThemeSettings.statusThemes.push(theme);
+  quotaThemeSettings.selectedStatusThemeId = theme.id;
+  saveThemeSettings();
+  populateThemeControls();
+  applyThemeCopyToRuntime();
+}
+
+function createHeadlineTheme() {
+  const bands = cloneData(getCurrentHeadlineTheme().bands);
+  const theme = {
+    id: `headline_custom_${Date.now()}`,
+    name: uniqueThemeName(buildThemeNameFromHeadlineBands(bands), quotaThemeSettings.headlineThemes),
+    bands,
+  };
+  quotaThemeSettings.headlineThemes.push(theme);
+  quotaThemeSettings.selectedHeadlineThemeId = theme.id;
+  saveThemeSettings();
+  populateThemeControls();
+  applyThemeCopyToRuntime();
+}
+
+function isCustomTemplateSelected() {
+  return (getEl('cfg-template')?.value || 'handdraw_card') === 'custom_token_daily_card';
+}
+
+function applyThemeCopyToRuntime() {
+  const quotaCopy = getQuotaCopy(codexQuotaStatus.five_hour_percent);
+  codexQuotaStatus.status_label = quotaCopy.status;
+  codexQuotaStatus.headline = quotaCopy.headline;
+  codexQuotaStatus.highlight_text = quotaCopy.highlight;
+  if (!isCustomTemplateSelected()) {
+    getEl('cfg-headline').value = quotaCopy.headline;
+    getEl('cfg-highlight').value = quotaCopy.highlight;
+  }
+  updateQuotaDisplay();
+  renderPreview();
+}
+
+function setupThemeControls() {
+  getEl('cfg-status-theme')?.addEventListener('change', (ev) => {
+    quotaThemeSettings.selectedStatusThemeId = ev.target.value;
+    saveThemeSettings();
+    renderStatusThemeEditor();
+    applyThemeCopyToRuntime();
+  });
+  getEl('cfg-headline-theme')?.addEventListener('change', (ev) => {
+    quotaThemeSettings.selectedHeadlineThemeId = ev.target.value;
+    saveThemeSettings();
+    renderHeadlineThemeEditor();
+    applyThemeCopyToRuntime();
+  });
+  getEl('btn-add-status-theme')?.addEventListener('click', createStatusTheme);
+  getEl('btn-add-headline-theme')?.addEventListener('click', createHeadlineTheme);
+}
+
+/** 根据当前模板类型更新控件的禁用/启用状态 */
+function updateControlStates(templateId) {
+  const isCustom = templateId === 'custom_token_daily_card';
+  getEl('cfg-headline').disabled = !isCustom;
+  getEl('cfg-highlight').disabled = !isCustom;
+  getEl('icon-upload').disabled = !isCustom;
+  if (getEl('cfg-auto-icon-theme')) getEl('cfg-auto-icon-theme').disabled = isCustom;
+  const resetBtn = document.querySelector('button[onclick="resetIcon()"]');
+  if (resetBtn) resetBtn.disabled = !isCustom;
+}
+
 function handleImageUpload(e) {
+  const currentTemplateId = getEl('cfg-template')?.value || 'handdraw_card';
+  if (currentTemplateId !== 'custom_token_daily_card') return;
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = function(ev) { const img = new Image(); img.onload = function() { const ic = getEl('hidden-icon-canvas'); ic.width = 32; ic.height = 32; const ictx = ic.getContext('2d'); ictx.fillStyle = '#FFFFFF'; ictx.fillRect(0, 0, 32, 32); ictx.drawImage(img, 0, 0, 32, 32); customImage = true; renderPreview(); addLog('图标已加载'); }; img.src = ev.target.result; };
   reader.readAsDataURL(file);
 }
-function resetIcon() { customImage = null; const ic = getEl('hidden-icon-canvas'); ic.width = 0; ic.height = 0; renderPreview(); addLog('图标已重置'); }
+function resetIcon() {
+  const currentTemplateId = getEl('cfg-template')?.value || 'handdraw_card';
+  if (currentTemplateId !== 'custom_token_daily_card') return;
+  customImage = null; const ic = getEl('hidden-icon-canvas'); ic.width = 0; ic.height = 0; renderPreview(); addLog('图标已重置'); }
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadThemeSettings();
+  populateAutoIconThemeSelect(loadUserSettings().autoIconThemeId || 'brain');
   applyUserSettings(loadUserSettings());
+  setupThemeControls();
+  populateThemeControls();
+  updateControlStates(getEl('cfg-template')?.value || 'handdraw_card');
+  applyThemeCopyToRuntime();
   EPD.onLog(addLog);
   EPD.onStatus((msg) => {
     setBleStatus('发送中 ' + msg, 'color-primary');
@@ -845,10 +1348,24 @@ document.addEventListener('DOMContentLoaded', () => {
   ['cfg-title', 'cfg-headline', 'cfg-subheadline', 'cfg-highlight'].forEach(id => getEl(id).addEventListener('input', () => { renderPreview(); saveUserSettings(); }));
   ['cfg-screen', 'cfg-color-mode', 'cfg-invert-bw', 'cfg-invert-red'].forEach(id => getEl(id).addEventListener('change', () => { updateScreenSize(); renderPreview(); saveUserSettings(); }));
   getEl('cfg-driver').addEventListener('change', () => { saveUserSettings(); });
-  if (getEl('cfg-template')) getEl('cfg-template').addEventListener('change', () => { templateFromUrl = false; storedTemplateIdBeforeUrlPreview = getEl('cfg-template').value; renderPreview(); saveUserSettings(); });
+  if (getEl('cfg-template')) getEl('cfg-template').addEventListener('change', () => {
+    templateFromUrl = false;
+    const newTemplateId = getEl('cfg-template').value;
+    storedTemplateIdBeforeUrlPreview = newTemplateId;
+    updateControlStates(newTemplateId);
+    const isCustom = newTemplateId === 'custom_token_daily_card';
+    if (isCustom) {
+      getEl('cfg-headline').value = '这里是主文案';
+      getEl('cfg-highlight').value = '';
+    } else {
+      applyThemeCopyToRuntime();
+    }
+    renderPreview(); saveUserSettings();
+  });
   getEl('cfg-auto-refresh').addEventListener('change', toggleAutoRefresh);
   getEl('cfg-refresh-interval').addEventListener('change', onRefreshIntervalChange);
   getEl('cfg-custom-min').addEventListener('input', () => { refreshIntervalMinutes = parseInt(getEl('cfg-custom-min').value) || 30; if (autoRefreshEnabled) startAutoRefresh(); saveUserSettings(); });
+  getEl('cfg-auto-icon-theme')?.addEventListener('change', () => { renderPreview(); saveUserSettings(); });
   getEl('icon-upload').addEventListener('change', handleImageUpload);
   setInterval(updateCountdown, 1000);
   refreshData();

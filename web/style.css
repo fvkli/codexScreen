@@ -148,6 +148,25 @@ body {
 .field input[type="file"] {
   width: 100%; padding: 6px; font-size: 12px; border: 1px dashed #cbd5e1; border-radius: var(--radius-sm); background: #fff;
 }
+.field input:disabled, .field select:disabled, .btn:disabled {
+  opacity: 0.48; cursor: not-allowed;
+}
+.theme-block {
+  margin: 0 0 16px; padding: 10px; border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm); background: #f8fafc;
+}
+.theme-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.theme-head label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+.theme-block select, .theme-editor input[type="text"] {
+  width: 100%; padding: 8px 10px; font-size: 13px;
+  border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+  background: #fff; outline: none;
+}
+.theme-editor { margin-top: 10px; display: grid; gap: 8px; }
+.theme-row { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 8px; }
+.theme-row label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.theme-duo { display: grid; grid-template-columns: 1fr 0.75fr; gap: 6px; }
+.btn-mini { padding: 5px 10px; font-size: 12px; }
 .check-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .check { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
 .check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); }
@@ -216,6 +235,27 @@ body {
 
 .quota-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color); }
 .quota-meta strong { color: var(--text-main); }
+
+/* 控件禁用状态样式 - 模板联动 */
+.field input[disabled],
+.field select[disabled] {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+}
+.field input[type="file"][disabled] {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+}
+.btn[disabled],
+.btn-outline[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 /* 响应式调整 */
 @media (max-width: 1024px) {
