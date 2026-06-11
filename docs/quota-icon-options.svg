@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="760" viewBox="0 0 1120 760">
+  <defs>
+    <style>
+      .bg { fill: #fffaf0; }
+      .panel { fill: #fff; stroke: #111; stroke-width: 2; }
+      .title { font: 700 26px "Microsoft YaHei", Arial, sans-serif; fill: #111; }
+      .label { font: 700 18px "Microsoft YaHei", Arial, sans-serif; fill: #111; }
+      .small { font: 600 14px "Microsoft YaHei", Arial, sans-serif; fill: #333; }
+      .ink { fill: none; stroke: #111; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .thin { fill: none; stroke: #111; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .red { fill: none; stroke: #f00; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .redThin { fill: none; stroke: #f00; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+      .redFill { fill: #f00; stroke: #111; stroke-width: 3; stroke-linejoin: round; }
+      .whiteFill { fill: #fff; stroke: #111; stroke-width: 3; stroke-linejoin: round; }
+      .gray { fill: #f6f1df; stroke: #111; stroke-width: 2.2; }
+      .muted { opacity: .45; }
+    </style>
+    <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <path d="M0 0 L0 8" stroke="#f00" stroke-width="3" stroke-linecap="round"/>
+    </pattern>
+  </defs>
+
+  <rect class="bg" width="1120" height="760"/>
+  <text class="title" x="36" y="48">5小时额度动态图标方案</text>
+  <text class="small" x="36" y="76">从左到右：81-100 满血复活 / 61-80 电量健康 / 41-60 脑袋温热 / 21-40 脑袋发烫 / 0-20 人都麻了</text>
+
+  <text class="label" x="170" y="122">满血复活</text>
+  <text class="label" x="365" y="122">电量健康</text>
+  <text class="label" x="560" y="122">脑袋温热</text>
+  <text class="label" x="755" y="122">脑袋发烫</text>
+  <text class="label" x="952" y="122">人都麻了</text>
+
+  <text class="label" x="42" y="190">A 脑袋表情</text>
+  <text class="small" x="42" y="214">替代乱线团，最直观</text>
+  <text class="label" x="42" y="340">B 电池能量</text>
+  <text class="small" x="42" y="364">跟“额度”语义最贴</text>
+  <text class="label" x="42" y="490">C 火候温度</text>
+  <text class="small" x="42" y="514">对应温热/发烫</text>
+  <text class="label" x="42" y="640">D 小火箭</text>
+  <text class="small" x="42" y="664">更轻松，适合“造”</text>
+
+  <!-- Row A: brain faces -->
+  <g transform="translate(210 190)">
+    <circle class="whiteFill" cx="0" cy="0" r="40"/>
+    <path class="thin" d="M-22 -8 C-8 -22 8 -22 22 -8 M-24 7 C-8 23 8 23 24 7 M-26 -2 H26"/>
+    <path class="red" d="M-17 8 Q0 23 17 8"/>
+    <circle cx="-13" cy="-9" r="3" fill="#111"/><circle cx="13" cy="-9" r="3" fill="#111"/>
+    <path class="redThin" d="M-45 -35 L-58 -52 M43 -37 L56 -55"/>
+  </g>
+  <g transform="translate(405 190)">
+    <circle class="whiteFill" cx="0" cy="0" r="40"/>
+    <path class="thin" d="M-22 -10 C-7 -24 8 -24 23 -10 M-26 4 C-10 18 9 18 25 4"/>
+    <path class="ink" d="M-18 8 Q0 19 18 8"/>
+    <circle cx="-13" cy="-8" r="3" fill="#111"/><circle cx="13" cy="-8" r="3" fill="#111"/>
+  </g>
+  <g transform="translate(600 190)">
+    <circle class="whiteFill" cx="0" cy="0" r="40"/>
+    <path class="thin" d="M-25 -8 C-9 -23 10 -23 25 -8 M-24 6 C-8 18 8 18 24 6"/>
+    <path class="ink" d="M-17 10 Q0 14 17 10"/>
+    <circle cx="-13" cy="-8" r="3" fill="#111"/><circle cx="13" cy="-8" r="3" fill="#111"/>
+    <path class="redThin" d="M-34 -31 C-22 -41 25 -42 36 -30"/>
+  </g>
+  <g transform="translate(795 190)">
+    <circle class="whiteFill" cx="0" cy="0" r="40"/>
+    <path class="thin" d="M-25 -8 C-9 -23 10 -23 25 -8 M-24 6 C-8 18 8 18 24 6"/>
+    <path class="ink" d="M-16 16 Q0 6 16 16"/>
+    <circle cx="-13" cy="-8" r="3" fill="#111"/><circle cx="13" cy="-8" r="3" fill="#111"/>
+    <path class="red" d="M-39 -30 L-50 -53 M-16 -39 L-20 -61 M18 -38 L25 -60 M41 -28 L54 -50"/>
+  </g>
+  <g transform="translate(990 190)">
+    <circle class="whiteFill" cx="0" cy="0" r="40"/>
+    <path class="thin" d="M-25 -8 C-9 -23 10 -23 25 -8 M-24 6 C-8 18 8 18 24 6"/>
+    <path class="ink" d="M-18 18 Q0 2 18 18"/>
+    <path class="ink" d="M-18 -11 L-8 -3 M-8 -11 L-18 -3 M8 -11 L18 -3 M18 -11 L8 -3"/>
+    <path class="redThin" d="M-32 28 C-15 38 16 38 33 28"/>
+  </g>
+
+  <!-- Row B: battery -->
+  <g transform="translate(210 340)">
+    <rect class="whiteFill" x="-48" y="-24" width="86" height="48" rx="8"/>
+    <path class="ink" d="M42 -9 H53 V9 H42"/>
+    <rect x="-38" y="-14" width="66" height="28" fill="url(#hatch)" stroke="#111" stroke-width="2"/>
+    <path class="red" d="M-2 -42 L-18 -6 H1 L-12 35 L25 -14 H6 Z"/>
+  </g>
+  <g transform="translate(405 340)">
+    <rect class="whiteFill" x="-48" y="-24" width="86" height="48" rx="8"/>
+    <path class="ink" d="M42 -9 H53 V9 H42"/>
+    <rect x="-38" y="-14" width="52" height="28" fill="url(#hatch)" stroke="#111" stroke-width="2"/>
+    <path class="redThin" d="M-27 -38 Q0 -50 27 -38"/>
+  </g>
+  <g transform="translate(600 340)">
+    <rect class="whiteFill" x="-48" y="-24" width="86" height="48" rx="8"/>
+    <path class="ink" d="M42 -9 H53 V9 H42"/>
+    <rect x="-38" y="-14" width="34" height="28" fill="url(#hatch)" stroke="#111" stroke-width="2"/>
+    <path class="redThin" d="M-36 -39 C-12 -31 11 -31 35 -39"/>
+  </g>
+  <g transform="translate(795 340)">
+    <rect class="whiteFill" x="-48" y="-24" width="86" height="48" rx="8"/>
+    <path class="ink" d="M42 -9 H53 V9 H42"/>
+    <rect x="-38" y="-14" width="20" height="28" fill="url(#hatch)" stroke="#111" stroke-width="2"/>
+    <path class="red" d="M-38 -42 L-44 -58 M-8 -45 L-8 -64 M24 -42 L32 -58"/>
+  </g>
+  <g transform="translate(990 340)">
+    <rect class="whiteFill" x="-48" y="-24" width="86" height="48" rx="8"/>
+    <path class="ink" d="M42 -9 H53 V9 H42"/>
+    <rect x="-38" y="-14" width="8" height="28" fill="#f00" stroke="#111" stroke-width="2"/>
+    <path class="ink" d="M-15 -49 L15 -49 M-10 -58 L10 -58"/>
+  </g>
+
+  <!-- Row C: heat -->
+  <g transform="translate(210 490)">
+    <path class="redFill" d="M0 -48 C30 -18 30 17 0 41 C-30 17 -30 -18 0 -48Z"/>
+    <path class="thin" d="M-16 8 C-4 -3 4 -3 16 8 M-18 18 C-5 30 5 30 18 18"/>
+    <circle cx="-11" cy="-8" r="3" fill="#111"/><circle cx="11" cy="-8" r="3" fill="#111"/>
+  </g>
+  <g transform="translate(405 490)">
+    <path class="whiteFill" d="M0 -45 C29 -16 28 18 0 40 C-28 18 -29 -16 0 -45Z"/>
+    <path class="redThin" d="M-18 22 C-4 -13 3 -16 18 -31 M-26 8 C-9 -16 5 -22 26 -12"/>
+    <circle cx="-11" cy="-8" r="3" fill="#111"/><circle cx="11" cy="-8" r="3" fill="#111"/>
+    <path class="ink" d="M-15 13 Q0 23 15 13"/>
+  </g>
+  <g transform="translate(600 490)">
+    <path class="whiteFill" d="M0 -45 C29 -16 28 18 0 40 C-28 18 -29 -16 0 -45Z"/>
+    <path class="redThin" d="M-28 -35 C-13 -48 12 -48 28 -35 M-33 -24 C-9 -33 10 -33 33 -24"/>
+    <circle cx="-11" cy="-8" r="3" fill="#111"/><circle cx="11" cy="-8" r="3" fill="#111"/>
+    <path class="ink" d="M-15 16 Q0 12 15 16"/>
+  </g>
+  <g transform="translate(795 490)">
+    <path class="whiteFill" d="M0 -45 C29 -16 28 18 0 40 C-28 18 -29 -16 0 -45Z"/>
+    <path class="red" d="M-35 -34 L-45 -56 M-10 -42 L-12 -65 M17 -41 L25 -62 M38 -29 L52 -49"/>
+    <circle cx="-11" cy="-8" r="3" fill="#111"/><circle cx="11" cy="-8" r="3" fill="#111"/>
+    <path class="ink" d="M-15 19 Q0 8 15 19"/>
+  </g>
+  <g transform="translate(990 490)">
+    <path class="whiteFill" d="M0 -45 C29 -16 28 18 0 40 C-28 18 -29 -16 0 -45Z"/>
+    <path class="ink" d="M-18 -11 L-8 -3 M-8 -11 L-18 -3 M8 -11 L18 -3 M18 -11 L8 -3"/>
+    <path class="ink" d="M-17 20 Q0 6 17 20"/>
+    <path class="redThin" d="M-28 34 C-12 43 13 43 28 34"/>
+  </g>
+
+  <!-- Row D: rocket -->
+  <g transform="translate(210 640)">
+    <path class="whiteFill" d="M-9 35 C-36 3 -20 -37 22 -52 C25 -8 16 21 -9 35Z"/>
+    <circle class="gray" cx="6" cy="-18" r="11"/>
+    <path class="redFill" d="M-13 30 L-40 44 L-28 16"/>
+    <path class="red" d="M-10 39 C-7 53 4 55 8 40 M4 34 C9 49 21 49 20 31"/>
+  </g>
+  <g transform="translate(405 640)">
+    <path class="whiteFill" d="M-9 35 C-36 3 -20 -37 22 -52 C25 -8 16 21 -9 35Z"/>
+    <circle class="gray" cx="6" cy="-18" r="11"/>
+    <path class="redThin" d="M-14 34 C-5 47 10 47 16 31"/>
+  </g>
+  <g transform="translate(600 640)">
+    <path class="whiteFill" d="M-9 35 C-36 3 -20 -37 22 -52 C25 -8 16 21 -9 35Z"/>
+    <circle class="gray" cx="6" cy="-18" r="11"/>
+    <path class="redThin" d="M-27 -42 C-12 -50 12 -50 28 -42"/>
+  </g>
+  <g transform="translate(795 640)">
+    <path class="whiteFill" d="M-9 35 C-36 3 -20 -37 22 -52 C25 -8 16 21 -9 35Z"/>
+    <circle class="gray" cx="6" cy="-18" r="11"/>
+    <path class="red" d="M-29 -45 L-38 -63 M-1 -52 L1 -72 M28 -41 L42 -58"/>
+  </g>
+  <g transform="translate(990 640)">
+    <path class="whiteFill muted" d="M-9 35 C-36 3 -20 -37 22 -52 C25 -8 16 21 -9 35Z"/>
+    <circle class="gray" cx="6" cy="-18" r="11"/>
+    <path class="ink" d="M-31 42 C-12 35 15 37 33 45"/>
+    <path class="redThin" d="M-32 -36 C-18 -49 14 -49 31 -36"/>
+  </g>
+</svg>

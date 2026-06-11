@@ -1,0 +1,35 @@
+device:
+  name: "Codex Epaper"
+  ble_name: "CodexQuota"
+
+display:
+  width: 250
+  height: 122
+  colors: "bwr"
+  controller: "ssd1680"
+  rotation: 0
+
+pins:
+  spi_sck: 17
+  spi_mosi: 18
+  epaper_cs: 20
+  epaper_dc: 21
+  epaper_rst: 22
+  epaper_busy: 23
+
+collector:
+  type: codex_live
+  # type: manual
+  # manual_file: ../examples/sample_status.json
+
+refresh:
+  interval_minutes: 30
+  refresh_on_start: true
+  retry_count: 3
+  retry_delay_seconds: 10
+
+ble:
+  device_name: "CodexQuota"
+  mtu: 185
+  chunk_size: 160
+  connect_timeout_seconds: 15

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex 墨水屏控制台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="brand">Codex Console</div>
+      <button id="btn-connect" class="btn btn-primary" onclick="connectDevice()">连接设备</button>
+      <button id="btn-send" class="btn btn-primary" onclick="sendToDevice()">发送至屏幕</button>
+      <button class="btn btn-secondary" onclick="refreshData()">刷新数据</button>
+    </div>
+    <div class="toolbar-right">
+      <div class="refresh-group">
+        <span class="label">自动刷新</span>
+        <label class="toggle"><input type="checkbox" id="cfg-auto-refresh"><span class="slider"></span></label>
+        <select id="cfg-refresh-interval" onchange="onRefreshIntervalChange()">
+          <option value="10">10min</option>
+          <option value="20">20min</option>
+          <option value="30" selected>30min</option>
+          <option value="60">60min</option>
+          <option value="custom">自定义</option>
+        </select>
+        <input type="number" id="cfg-custom-min" value="30" min="1" style="display:none">
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar sidebar-l">
+      <div class="card">
+        <div class="card-title">画面内容设置</div>
+        <div class="field"><label>画面模板</label>
+          <select id="cfg-template">
+            <option value="handdraw_card" selected>手绘卡片</option>
+            <option value="token_daily_card">今日 Token</option>
+            <option value="image_transfer_card">图片传输</option>
+          </select>
+        </div>
+        <div id="quota-template-fields">
+          <div class="field"><label>大标题</label><input type="text" id="cfg-title" value="Codex plus"></div>
+          <div class="field"><label>主文案</label><input type="text" id="cfg-headline" value="省着点用..."></div>
+          <div class="field"><label>副文案</label><input type="text" id="cfg-subheadline" value="当前能量消耗较快，建议控制使用频率"></div>
+          <div class="field"><label>高亮红字</label><input type="text" id="cfg-highlight" value="省着点"></div>
+          
+          <div class="field"><label>自定义图标(可选)</label><input type="file" id="icon-upload" accept=".png,.jpg,.jpeg,.webp"></div>
+          <button class="btn btn-outline btn-full" onclick="resetIcon()">重置默认树叶图标</button>
+        </div>
+        <div id="image-transfer-fields" hidden>
+          <div class="field"><label>传输图片</label><input type="file" id="transfer-image-upload" accept=".png,.jpg,.jpeg,.webp"></div>
+          <div class="image-transfer-meta" id="transfer-image-meta">未选择图片</div>
+          <button class="btn btn-outline btn-full" onclick="resetTransferImage()">清除图片</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">硬件参数设置</div>
+        <div class="field"><label>屏幕尺寸</label>
+          <select id="cfg-screen">
+            <option value="4.2_400_300" selected>4.2寸 (400x300) - 最佳比例</option>
+            <option value="2.9_128_296">2.9寸 (296x128)</option>
+            <option value="2.13_122_250">2.13寸 (250x122)</option>
+            <option value="2.13_104_212">2.13寸 (212x104)</option>
+          </select>
+        </div>
+        <div class="field"><label>驱动型号</label>
+          <select id="cfg-driver">
+            <option value="01">4.2寸 BW (UC8176)</option>
+            <option value="03" selected>4.2寸 BWR (UC8176)</option>
+            <option value="04">4.2寸 BW (SSD1619)</option>
+            <option value="02">4.2寸 BWR (SSD1619)</option>
+          </select>
+        </div>
+        <div class="field"><label>颜色模式</label>
+          <select id="cfg-color-mode">
+            <option value="bwr" selected>三色 (黑白红)</option>
+            <option value="bw">单色 (黑白)</option>
+          </select>
+        </div>
+        <div class="check-group">
+          <label class="check"><input type="checkbox" id="cfg-invert-bw"><span>反转黑色</span></label>
+          <label class="check"><input type="checkbox" id="cfg-invert-red"><span>反转红色</span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-col">
+      <div class="epd-frame">
+        <canvas id="preview-canvas" width="400" height="300"></canvas>
+        <div class="epd-label">E-PAPER 深度定制版</div>
+      </div>
+      
+      <div class="status-panel">
+        <div class="status-item"><span>BLE状态:</span><strong id="ble-status" class="color-warn">未连接</strong></div>
+        <div class="status-item"><span>倒计时:</span><strong id="countdown" class="color-primary">-</strong></div>
+        <div class="status-item"><span>上次更新:</span><strong id="last-refresh-time">-</strong></div>
+        <div class="status-item"><span>下次更新:</span><strong id="next-refresh-time">-</strong></div>
+      </div>
+      <div class="log-box-wrapper">
+        <div class="log-title">设备日志</div>
+        <div class="log-box" id="log"></div>
+      </div>
+    </div>
+
+    <div class="sidebar sidebar-r">
+      <div class="card">
+        <div class="card-title">API 额度监控</div>
+        <div class="quota-item">
+          <div class="quota-header"><span>5小时能量储量</span><span id="q-5h-val" class="quota-val">-</span></div>
+          <div class="quota-bar"><div class="fill black" id="q-5h-bar" style="width:0%"></div></div>
+        </div>
+        <div class="quota-item" style="margin-top: 16px;">
+          <div class="quota-header"><span>7天轨迹</span><span id="q-7d-val" class="quota-val">-</span></div>
+          <div class="dot-track" id="q-7d-dots"></div>
+        </div>
+        <div class="sep"></div>
+        <div class="quota-item">
+          <div class="quota-header" style="color:var(--primary)"><span>5h 额度预计恢复</span></div>
+          <div style="font-size: 15px; font-weight: bold; font-family: monospace" id="q-5h-ref">-</div>
+        </div>
+        <div class="quota-item">
+          <div class="quota-header" style="color:var(--primary)"><span>轨迹刷新时长</span></div>
+          <div style="font-size: 15px; font-weight: bold; font-family: monospace" id="q-7d-ref">-</div>
+        </div>
+        <div class="sep"></div>
+        <div class="quota-item">
+          <div class="quota-header" style="margin-bottom: 8px;"><span>当前服务器状态</span></div>
+          <span class="status-pill ok" id="q-status-pill">--</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<canvas id="hidden-icon-canvas" style="display:none"></canvas>
+<script src="epd-nrf5-protocol.js"></script>
+<script src="renderer.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
