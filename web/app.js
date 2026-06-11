@@ -9,6 +9,7 @@ let isSending = false;
 let lastTransferStatusAt = 0;
 let templateFromUrl = false;
 let storedTemplateIdBeforeUrlPreview = 'handdraw_card';
+const disabledSubheadlineText = '此模版不可用副文案~.~';
 
 // 数据模型
 const codexQuotaStatus = {
@@ -68,6 +69,13 @@ const defaultHeadlineThemes = [
 let quotaThemeSettings = normalizeThemeSettings();
 
 function getEl(id) { return document.getElementById(id); }
+
+function setDisabledSubheadlineText() {
+  const el = getEl('cfg-subheadline');
+  if (!el) return;
+  el.value = disabledSubheadlineText;
+  el.disabled = true;
+}
 
 function getQuotaCopy(percent) {
   const band = getQuotaBand(percent);
@@ -197,7 +205,7 @@ function saveUserSettings() {
 
 function applyUserSettings(s) {
   getEl('cfg-title').value = s.title; getEl('cfg-headline').value = s.headline;
-  getEl('cfg-subheadline').value = s.subHeadline || '';
+  setDisabledSubheadlineText();
   getEl('cfg-highlight').value = s.highlightText; getEl('cfg-driver').value = s.driver;
   getEl('cfg-screen').value = s.screenPreset; getEl('cfg-color-mode').value = s.colorMode;
   getEl('cfg-invert-bw').checked = s.invertBlack; getEl('cfg-invert-red').checked = s.invertRed;
@@ -1103,7 +1111,7 @@ async function refreshData() {
       getEl('cfg-headline').value = quotaCopy.headline;
       getEl('cfg-highlight').value = quotaCopy.highlight;
     }
-    getEl('cfg-subheadline').value = data.subheadline || data.subHeadline || '';
+    setDisabledSubheadlineText();
     
     updateQuotaDisplay(); addLog('额度数据已从后端刷新');
   } catch (e) { addLog('刷新失败: ' + e.message); }
@@ -1307,6 +1315,7 @@ function updateControlStates(templateId) {
   const isCustom = templateId === 'custom_token_daily_card';
   getEl('cfg-headline').disabled = !isCustom;
   getEl('cfg-highlight').disabled = !isCustom;
+  setDisabledSubheadlineText();
   getEl('icon-upload').disabled = !isCustom;
   if (getEl('cfg-auto-icon-theme')) getEl('cfg-auto-icon-theme').disabled = isCustom;
   const resetBtn = document.querySelector('button[onclick="resetIcon()"]');
