@@ -40,6 +40,13 @@
             <option value="handdraw_card" selected>手绘卡片</option>
             <option value="token_daily_card">今日 Token</option>
             <option value="custom_token_daily_card">自定义今日token</option>
+            <option value="weather_token_card">天气 Token</option>
+          </select>
+        </div>
+        <div class="field"><label>天气间隔</label>
+          <select id="cfg-weather-interval" disabled>
+            <option value="1" selected>间隔1小时</option>
+            <option value="2">间隔2小时</option>
           </select>
         </div>
         <div class="theme-block">
@@ -48,7 +55,10 @@
             <button type="button" class="btn btn-outline btn-mini" id="btn-add-status-theme">新增</button>
           </div>
           <select id="cfg-status-theme"></select>
-          <div id="status-theme-editor" class="theme-editor"></div>
+          <details class="theme-detail" id="status-theme-detail">
+            <summary>编辑当前状态主题</summary>
+            <div id="status-theme-editor" class="theme-editor"></div>
+          </details>
         </div>
         <div class="theme-block">
           <div class="theme-head">
@@ -56,7 +66,10 @@
             <button type="button" class="btn btn-outline btn-mini" id="btn-add-headline-theme">新增</button>
           </div>
           <select id="cfg-headline-theme"></select>
-          <div id="headline-theme-editor" class="theme-editor"></div>
+          <details class="theme-detail" id="headline-theme-detail">
+            <summary>编辑当前主文案主题</summary>
+            <div id="headline-theme-editor" class="theme-editor"></div>
+          </details>
         </div>
         <div class="theme-block">
           <div class="theme-head">
@@ -64,15 +77,18 @@
           </div>
           <select id="cfg-auto-icon-theme"></select>
         </div>
-        <div id="quota-template-fields">
-          <div class="field"><label>大标题</label><input type="text" id="cfg-title" value="Codex plus"></div>
-          <div class="field"><label>主文案</label><input type="text" id="cfg-headline" value="省着点用..."></div>
-          <div class="field"><label>副文案</label><input type="text" id="cfg-subheadline" value="此模版不可用副文案~.~" disabled></div>
-          <div class="field"><label>高亮红字</label><input type="text" id="cfg-highlight" value="省着点"></div>
-          
-          <div class="field"><label>自定义图标(可选)</label><input type="file" id="icon-upload" accept=".png,.jpg,.jpeg,.webp"></div>
-          <button class="btn btn-outline btn-full" onclick="resetIcon()">重置默认树叶图标</button>
-        </div>
+        <details class="template-detail" id="template-fields-detail" open>
+          <summary>模板字段</summary>
+          <div id="quota-template-fields">
+            <div class="field"><label>大标题</label><input type="text" id="cfg-title" value="Codex plus"></div>
+            <div class="field"><label>主文案</label><input type="text" id="cfg-headline" value="省着点用..."></div>
+            <div class="field"><label>副文案</label><input type="text" id="cfg-subheadline" value="此模版不可用副文案~.~" disabled></div>
+            <div class="field"><label>高亮红字</label><input type="text" id="cfg-highlight" value="省着点"></div>
+            
+            <div class="field"><label>自定义图标(可选)</label><input type="file" id="icon-upload" accept=".png,.jpg,.jpeg,.webp"></div>
+            <button class="btn btn-outline btn-full" onclick="resetIcon()">重置默认树叶图标</button>
+          </div>
+        </details>
       </div>
 
       <div class="card">

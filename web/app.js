@@ -21,11 +21,27 @@ const codexQuotaStatus = {
   date_text: '6/5 周五', ble_status: '' 
 };
 
+const weatherStatus = {
+  ok: false,
+  updated_at: '--:--',
+  interval_hours: 1,
+  location_name: '夏良',
+  summary: '未来天气',
+  now: { temp: '--', text: '待刷新', icon: '' },
+  hours: [
+    { time: '--时', text: '--', temp: '--', is_rain: false },
+    { time: '--时', text: '--', temp: '--', is_rain: false },
+    { time: '--时', text: '--', temp: '--', is_rain: false },
+    { time: '--时', text: '--', temp: '--', is_rain: false },
+  ],
+  error: '',
+};
+
 const userDefaults = {
   title: 'Codex plus', headline: '省着点用...', subHeadline: '当前能量消耗较快，建议控制使用频率', highlightText: '省着点',
   driver: '03', screenPreset: '4.2_400_300', colorMode: 'bwr',
   refreshInterval: 30, autoRefresh: false, invertBlack: false, invertRed: false,
-  templateId: 'handdraw_card', autoIconThemeId: 'brain',
+  templateId: 'handdraw_card', autoIconThemeId: 'brain', weatherInterval: '1',
 };
 
 const screenPresets = {
@@ -199,6 +215,7 @@ function saveUserSettings() {
     invertRed: getEl('cfg-invert-red').checked,
     templateId: templateFromUrl ? storedTemplateIdBeforeUrlPreview : (getEl('cfg-template')?.value || 'handdraw_card'),
     autoIconThemeId: getEl('cfg-auto-icon-theme')?.value || 'brain',
+    weatherInterval: getEl('cfg-weather-interval')?.value || '1',
   };
   localStorage.setItem('codex-epaper-settings', JSON.stringify(s));
 }
@@ -210,6 +227,7 @@ function applyUserSettings(s) {
   getEl('cfg-screen').value = s.screenPreset; getEl('cfg-color-mode').value = s.colorMode;
   getEl('cfg-invert-bw').checked = s.invertBlack; getEl('cfg-invert-red').checked = s.invertRed;
   if (getEl('cfg-auto-icon-theme')) getEl('cfg-auto-icon-theme').value = autoIconThemes.some(t => t.id === s.autoIconThemeId) ? s.autoIconThemeId : 'brain';
+  if (getEl('cfg-weather-interval')) getEl('cfg-weather-interval').value = String(s.weatherInterval || '1') === '2' ? '2' : '1';
   const urlTemplate = new URLSearchParams(window.location.search).get('template');
   storedTemplateIdBeforeUrlPreview = s.templateId || 'handdraw_card';
   templateFromUrl = Boolean(urlTemplate && previewTemplates[urlTemplate]);
@@ -286,7 +304,7 @@ const previewTemplates = {
         title, headline, subline, hlText, sevenDayPercent, remainingDays,
         dateText, updatedAt, nextAt, bleConnected, bleText } = state;
       const { setFont, drawWobbleLine, drawBox, drawRichText, drawAutoIcon,
-        drawProgressBar, drawDots, drawHeart, drawDailyTokenRow, drawBottomCentered, clampNumber, getSevenDayRemainingDays } = helpers;
+        drawProgressBar, drawDots, drawHeart, drawDailyTokenRow, drawWeatherHeader, drawBottomCentered, clampNumber, getSevenDayRemainingDays } = helpers;
 
       // 只用黑/红/白，保证 canvasToEpaperPlanes 能稳定转成黑白红三色位图。
       ctx.fillStyle = WHITE;
@@ -307,7 +325,9 @@ const previewTemplates = {
       drawWobbleLine(18, 53, 382, 53, BLACK, 1.4);
 
       // 主文案区域
-      if (state.useCustomIcon) {
+      if (state.useWeatherHeader) {
+        drawWeatherHeader(state.weather);
+      } else if (state.useCustomIcon) {
         // 自定义模板模式：仅在用户上传图标时绘制，否则留空
         if (customImage) {
           const ic = document.getElementById('hidden-icon-canvas');
@@ -318,17 +338,19 @@ const previewTemplates = {
       } else {
         drawAutoIcon(state.autoIconThemeId, 73, 93, 70, fiveHourPercent);
       }
-      drawRichText(headline, 238, 104, headline.length > 8 ? 30 : 34, 'bold', hlText);
-      ctx.strokeStyle = RED;
-      ctx.lineWidth = SS(1.4);
-      ctx.beginPath();
-      ctx.moveTo(X(190), Y(114));
-      ctx.quadraticCurveTo(X(236), Y(118), X(289), Y(113));
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(X(202), Y(121));
-      ctx.quadraticCurveTo(X(240), Y(124), X(281), Y(120));
-      ctx.stroke();
+      if (!state.useWeatherHeader) {
+        drawRichText(headline, 238, 104, headline.length > 8 ? 30 : 34, 'bold', hlText);
+        ctx.strokeStyle = RED;
+        ctx.lineWidth = SS(1.4);
+        ctx.beginPath();
+        ctx.moveTo(X(190), Y(114));
+        ctx.quadraticCurveTo(X(236), Y(118), X(289), Y(113));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(X(202), Y(121));
+        ctx.quadraticCurveTo(X(240), Y(124), X(281), Y(120));
+        ctx.stroke();
+      }
       drawWobbleLine(18, 130, 382, 130, BLACK, 0.9);
 
       // 区域标题
@@ -413,6 +435,12 @@ const previewTemplates = {
     render(ctx, state, helpers) {
       previewTemplates.handdraw_card.render(ctx, { ...state, useDailyTokenRow: true, useCustomIcon: true }, helpers);
     }
+  },
+  weather_token_card: {
+    label: '天气 Token',
+    render(ctx, state, helpers) {
+      previewTemplates.handdraw_card.render(ctx, { ...state, useDailyTokenRow: true, useWeatherHeader: true }, helpers);
+    }
   }
 };
 
@@ -462,7 +490,7 @@ function buildRenderState() {
 
   return { W, H, SX, SY, S, X, Y, SS, BLACK, RED, WHITE, SOFT, q, fiveHourPercent, quotaCopy,
     title, headline, subline, hlText, sevenDayPercent, remainingDays,
-    dateText, updatedAt, nextAt, bleConnected, bleText, dailyTokenText, autoIconThemeId };
+    dateText, updatedAt, nextAt, bleConnected, bleText, dailyTokenText, autoIconThemeId, weather: weatherStatus };
 }
 
 function createRenderHelpers(canvas) {
@@ -1002,6 +1030,225 @@ function createRenderHelpers(canvas) {
     ctx.textAlign = 'left';
   }
 
+  function getWeatherKind(item) {
+    const text = String(item?.text || '');
+    if (item?.is_rain || /雨|雷|阵雨|暴雨|雪|雹/.test(text)) return 'rain';
+    if (/晴/.test(text)) return 'sun';
+    if (/云/.test(text)) return 'cloud';
+    if (/阴|雾|霾/.test(text)) return 'overcast';
+    return 'cloud';
+  }
+
+  function drawMiniWeatherIcon(cx, cy, kind, scale = 1, accent = BLACK) {
+    const ctx = canvas.getContext('2d');
+    const r = 8 * scale;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = accent;
+    ctx.fillStyle = WHITE;
+    ctx.lineWidth = SS(1.7 * scale);
+
+    if (kind === 'sun') {
+      ctx.beginPath();
+      ctx.ellipse(X(cx), Y(cy), SS(r), SS(r), 0, 0, Math.PI * 2);
+      ctx.stroke();
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4;
+        ctx.beginPath();
+        ctx.moveTo(X(cx + Math.cos(a) * r * 1.35), Y(cy + Math.sin(a) * r * 1.35));
+        ctx.lineTo(X(cx + Math.cos(a) * r * 1.85), Y(cy + Math.sin(a) * r * 1.85));
+        ctx.stroke();
+      }
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(X(cx - 16 * scale), Y(cy + 5 * scale));
+      ctx.quadraticCurveTo(X(cx - 17 * scale), Y(cy - 5 * scale), X(cx - 7 * scale), Y(cy - 6 * scale));
+      ctx.quadraticCurveTo(X(cx - 3 * scale), Y(cy - 18 * scale), X(cx + 9 * scale), Y(cy - 12 * scale));
+      ctx.quadraticCurveTo(X(cx + 16 * scale), Y(cy - 16 * scale), X(cx + 23 * scale), Y(cy - 6 * scale));
+      ctx.quadraticCurveTo(X(cx + 30 * scale), Y(cy + 6 * scale), X(cx + 15 * scale), Y(cy + 10 * scale));
+      ctx.quadraticCurveTo(X(cx - 2 * scale), Y(cy + 13 * scale), X(cx - 16 * scale), Y(cy + 5 * scale));
+      ctx.fill();
+      ctx.stroke();
+      if (scale >= 0.9) {
+        ctx.fillStyle = BLACK;
+        ctx.beginPath(); ctx.ellipse(X(cx - 4 * scale), Y(cy - 1 * scale), SS(1.6 * scale), SS(2.1 * scale), 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(X(cx + 9 * scale), Y(cy - 1 * scale), SS(1.6 * scale), SS(2.1 * scale), 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = BLACK;
+        ctx.lineWidth = SS(1.2 * scale);
+        ctx.beginPath();
+        ctx.moveTo(X(cx - 1 * scale), Y(cy + 5 * scale));
+        ctx.quadraticCurveTo(X(cx + 3 * scale), Y(cy + 8 * scale), X(cx + 7 * scale), Y(cy + 5 * scale));
+        ctx.stroke();
+        ctx.strokeStyle = RED;
+        ctx.lineWidth = SS(1 * scale);
+        ctx.beginPath();
+        ctx.moveTo(X(cx - 12 * scale), Y(cy + 3 * scale));
+        ctx.lineTo(X(cx - 8 * scale), Y(cy + 3 * scale));
+        ctx.moveTo(X(cx + 15 * scale), Y(cy + 3 * scale));
+        ctx.lineTo(X(cx + 19 * scale), Y(cy + 3 * scale));
+        ctx.stroke();
+      }
+      if (kind === 'rain') {
+        ctx.strokeStyle = RED;
+        ctx.fillStyle = WHITE;
+        for (let i = -1; i <= 1; i++) {
+          const dx = i * 8 * scale;
+          ctx.beginPath();
+          ctx.moveTo(X(cx + dx), Y(cy + 16 * scale));
+          ctx.quadraticCurveTo(X(cx + dx - 5 * scale), Y(cy + 22 * scale), X(cx + dx), Y(cy + 27 * scale));
+          ctx.quadraticCurveTo(X(cx + dx + 5 * scale), Y(cy + 22 * scale), X(cx + dx), Y(cy + 16 * scale));
+          ctx.fill();
+          ctx.stroke();
+        }
+      } else if (kind === 'overcast') {
+        ctx.strokeStyle = BLACK;
+        ctx.beginPath();
+        ctx.moveTo(X(cx - 17 * scale), Y(cy + 17 * scale));
+        ctx.lineTo(X(cx + 19 * scale), Y(cy + 17 * scale));
+        ctx.moveTo(X(cx - 11 * scale), Y(cy + 24 * scale));
+        ctx.lineTo(X(cx + 13 * scale), Y(cy + 24 * scale));
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function drawUmbrellaIcon(cx, cy, scale = 1) {
+    const ctx = canvas.getContext('2d');
+    const px = (v) => X(cx + v * scale);
+    const py = (v) => Y(cy + v * scale);
+    const sw = (v) => SS(v * scale);
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = BLACK;
+    ctx.fillStyle = WHITE;
+    ctx.lineWidth = sw(2);
+
+    ctx.beginPath();
+    ctx.moveTo(px(-32), py(4));
+    ctx.quadraticCurveTo(px(-18), py(-28), px(18), py(-27));
+    ctx.quadraticCurveTo(px(35), py(-18), px(38), py(4));
+    ctx.quadraticCurveTo(px(25), py(-3), px(15), py(8));
+    ctx.quadraticCurveTo(px(2), py(-4), px(-9), py(8));
+    ctx.quadraticCurveTo(px(-20), py(-2), px(-32), py(4));
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(-34));
+    ctx.lineTo(px(0), py(31));
+    ctx.quadraticCurveTo(px(4), py(45), px(16), py(35));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px(-17), py(-17));
+    ctx.quadraticCurveTo(px(-6), py(-27), px(0), py(8));
+    ctx.moveTo(px(18), py(-15));
+    ctx.quadraticCurveTo(px(7), py(-26), px(0), py(8));
+    ctx.stroke();
+
+    ctx.fillStyle = BLACK;
+    ctx.beginPath(); ctx.ellipse(px(-8), py(-5), sw(1.6), sw(2.2), 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(px(8), py(-5), sw(1.6), sw(2.2), 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(px(-4), py(4));
+    ctx.quadraticCurveTo(px(0), py(7), px(5), py(4));
+    ctx.stroke();
+
+    ctx.strokeStyle = RED;
+    ctx.lineWidth = sw(1.8);
+    ctx.beginPath();
+    ctx.moveTo(px(35), py(-17));
+    ctx.lineTo(px(44), py(-27));
+    ctx.moveTo(px(39), py(-12));
+    ctx.lineTo(px(51), py(-16));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawWeatherHeader(weather) {
+    const ctx = canvas.getContext('2d');
+    const data = weather || weatherStatus;
+    const now = data.now || {};
+    const hours = Array.isArray(data.hours) ? data.hours.slice(0, 4) : [];
+    while (hours.length < 4) {
+      hours.push({ time: '--时', text: '--', temp: '--', is_rain: false });
+    }
+
+    const rainy = hours.some(item => item.is_rain || /雨|雷|雪/.test(String(item.text || '')));
+    const title = data.ok ? (rainy ? '后几小时有雨' : '后几小时平稳') : '天气待配置';
+    const nowText = now.text || '天气';
+    const nowTemp = now.temp || '--';
+    const nowKind = getWeatherKind(now);
+
+    if (rainy || nowKind === 'rain') {
+      drawUmbrellaIcon(58, 88, 0.72);
+    } else {
+      drawMiniWeatherIcon(56, 90, nowKind, 0.95, BLACK);
+    }
+    setFont(31, 'bold');
+    ctx.fillStyle = BLACK;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(`${nowTemp}°`, X(104), Y(116));
+
+    ctx.strokeStyle = BLACK;
+    ctx.lineWidth = SS(1.2);
+    ctx.beginPath();
+    ctx.moveTo(X(128), Y(66));
+    ctx.lineTo(X(128), Y(123));
+    ctx.stroke();
+
+    drawMiniWeatherIcon(215, 64, 'cloud', 0.26, RED);
+    ctx.textAlign = 'center';
+    setFont(17, 'bold');
+    ctx.fillStyle = BLACK;
+    ctx.fillText('天气小报', X(258), Y(70));
+    ctx.strokeStyle = RED;
+    ctx.lineWidth = SS(1);
+    ctx.beginPath();
+    ctx.moveTo(X(234), Y(75));
+    ctx.quadraticCurveTo(X(258), Y(78), X(282), Y(75));
+    ctx.stroke();
+    setFont(10, 'bold');
+    ctx.textAlign = 'right';
+    ctx.fillStyle = BLACK;
+    ctx.fillText(data.updated_at ? `${data.updated_at} 更新` : '--:-- 更新', X(368), Y(66));
+    ctx.textAlign = 'left';
+
+    const startX = 158;
+    const gap = 50;
+    ctx.strokeStyle = BLACK;
+    ctx.lineWidth = SS(0.75);
+    for (let i = 1; i < 4; i++) {
+      const sepX = startX + gap * (i - 0.5);
+      for (let y = 79; y < 121; y += 10) {
+        ctx.beginPath();
+        ctx.moveTo(X(sepX), Y(y));
+        ctx.lineTo(X(sepX), Y(y + 5));
+        ctx.stroke();
+      }
+    }
+
+    hours.forEach((item, index) => {
+      const x = startX + index * gap;
+      const itemRain = item.is_rain || /雨|雷|雪/.test(String(item.text || ''));
+      const color = itemRain ? RED : BLACK;
+      setFont(13, 'bold');
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.fillText(String(item.time || '--时'), X(x), Y(88));
+      drawMiniWeatherIcon(x - 4, 101, getWeatherKind(item), 0.39, color);
+      setFont(16, 'bold');
+      ctx.fillStyle = BLACK;
+      const temp = item.temp === undefined || item.temp === null || item.temp === '' ? '--' : item.temp;
+      ctx.fillText(`${temp}°`, X(x), Y(124));
+    });
+    ctx.textAlign = 'left';
+  }
+
   function drawDailyTokenRow(labelX, rowY, trackX, trackW, valueColX, tokenText) {
     const ctx = canvas.getContext('2d');
 
@@ -1070,7 +1317,7 @@ function createRenderHelpers(canvas) {
   }
 
   return { setFont, drawWobbleLine, drawBox, drawRichText, drawBrainIcon, drawAutoIcon,
-    drawProgressBar, drawDots, drawHeart, drawDailyTokenRow, drawBottomCentered, clampNumber, getSevenDayRemainingDays };
+    drawProgressBar, drawDots, drawHeart, drawDailyTokenRow, drawWeatherHeader, drawBottomCentered, clampNumber, getSevenDayRemainingDays };
 }
 
 // ----------------------------------------------------
@@ -1115,8 +1362,30 @@ async function refreshData() {
     
     updateQuotaDisplay(); addLog('额度数据已从后端刷新');
   } catch (e) { addLog('刷新失败: ' + e.message); }
+  await refreshWeatherData();
   
   renderPreview(); saveUserSettings();
+}
+
+async function refreshWeatherData() {
+  const interval = getEl('cfg-weather-interval')?.value || '1';
+  try {
+    const resp = await fetch(`/api/weather?interval=${encodeURIComponent(interval)}`);
+    const data = await resp.json();
+    weatherStatus.ok = Boolean(data.ok);
+    weatherStatus.updated_at = data.updated_at || '--:--';
+    weatherStatus.interval_hours = data.interval_hours || Number(interval) || 1;
+    weatherStatus.location_name = data.location_name || weatherStatus.location_name || '';
+    weatherStatus.summary = data.summary || weatherStatus.summary || '未来天气';
+    weatherStatus.now = data.now || weatherStatus.now;
+    weatherStatus.hours = Array.isArray(data.hours) && data.hours.length ? data.hours.slice(0, 4) : weatherStatus.hours;
+    weatherStatus.error = data.error || '';
+    addLog(weatherStatus.ok ? '天气数据已从后端刷新' : ('天气数据不可用: ' + (weatherStatus.error || '未配置')));
+  } catch (e) {
+    weatherStatus.ok = false;
+    weatherStatus.error = e.message;
+    addLog('天气刷新失败: ' + e.message);
+  }
 }
 
 async function connectDevice() {
@@ -1246,6 +1515,7 @@ function renderHeadlineThemeEditor() {
       applyThemeCopyToRuntime();
     });
   });
+  setHeadlineThemeControlsDisabled(isWeatherTemplateSelected());
 }
 
 function createStatusTheme() {
@@ -1259,6 +1529,7 @@ function createStatusTheme() {
   quotaThemeSettings.selectedStatusThemeId = theme.id;
   saveThemeSettings();
   populateThemeControls();
+  openThemeDetail('status-theme-detail');
   applyThemeCopyToRuntime();
 }
 
@@ -1273,11 +1544,45 @@ function createHeadlineTheme() {
   quotaThemeSettings.selectedHeadlineThemeId = theme.id;
   saveThemeSettings();
   populateThemeControls();
+  openThemeDetail('headline-theme-detail');
   applyThemeCopyToRuntime();
 }
 
 function isCustomTemplateSelected() {
   return (getEl('cfg-template')?.value || 'handdraw_card') === 'custom_token_daily_card';
+}
+
+function isWeatherTemplateSelected() {
+  return (getEl('cfg-template')?.value || 'handdraw_card') === 'weather_token_card';
+}
+
+function setHeadlineThemeControlsDisabled(disabled) {
+  const headlineThemeSelect = getEl('cfg-headline-theme');
+  const addHeadlineThemeButton = getEl('btn-add-headline-theme');
+  const headlineThemeEditor = getEl('headline-theme-editor');
+  const headlineThemeDetail = getEl('headline-theme-detail');
+  if (headlineThemeSelect) headlineThemeSelect.disabled = disabled;
+  if (addHeadlineThemeButton) addHeadlineThemeButton.disabled = disabled;
+  headlineThemeEditor?.querySelectorAll('input').forEach(input => {
+    input.disabled = disabled;
+  });
+  if (headlineThemeDetail) {
+    headlineThemeDetail.classList.toggle('is-disabled', disabled);
+    if (disabled) headlineThemeDetail.open = false;
+  }
+  headlineThemeEditor?.closest('.theme-block')?.classList.toggle('is-disabled', disabled);
+}
+
+function setTemplateFieldsCompact(disabled) {
+  const detail = getEl('template-fields-detail');
+  if (!detail) return;
+  detail.classList.toggle('is-disabled', disabled);
+  detail.open = !disabled;
+}
+
+function openThemeDetail(id) {
+  const detail = getEl(id);
+  if (detail && !detail.classList.contains('is-disabled')) detail.open = true;
 }
 
 function applyThemeCopyToRuntime() {
@@ -1294,6 +1599,12 @@ function applyThemeCopyToRuntime() {
 }
 
 function setupThemeControls() {
+  getEl('headline-theme-detail')?.addEventListener('toggle', (ev) => {
+    if (isWeatherTemplateSelected() && ev.target.open) ev.target.open = false;
+  });
+  getEl('template-fields-detail')?.addEventListener('toggle', (ev) => {
+    if (isWeatherTemplateSelected() && ev.target.open) ev.target.open = false;
+  });
   getEl('cfg-status-theme')?.addEventListener('change', (ev) => {
     quotaThemeSettings.selectedStatusThemeId = ev.target.value;
     saveThemeSettings();
@@ -1313,11 +1624,15 @@ function setupThemeControls() {
 /** 根据当前模板类型更新控件的禁用/启用状态 */
 function updateControlStates(templateId) {
   const isCustom = templateId === 'custom_token_daily_card';
+  const isWeather = templateId === 'weather_token_card';
   getEl('cfg-headline').disabled = !isCustom;
   getEl('cfg-highlight').disabled = !isCustom;
+  setHeadlineThemeControlsDisabled(isWeather);
+  setTemplateFieldsCompact(isWeather);
   setDisabledSubheadlineText();
   getEl('icon-upload').disabled = !isCustom;
-  if (getEl('cfg-auto-icon-theme')) getEl('cfg-auto-icon-theme').disabled = isCustom;
+  if (getEl('cfg-auto-icon-theme')) getEl('cfg-auto-icon-theme').disabled = isCustom || isWeather;
+  if (getEl('cfg-weather-interval')) getEl('cfg-weather-interval').disabled = !isWeather;
   const resetBtn = document.querySelector('button[onclick="resetIcon()"]');
   if (resetBtn) resetBtn.disabled = !isCustom;
 }
@@ -1369,12 +1684,14 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       applyThemeCopyToRuntime();
     }
+    if (newTemplateId === 'weather_token_card') refreshWeatherData().finally(renderPreview);
     renderPreview(); saveUserSettings();
   });
   getEl('cfg-auto-refresh').addEventListener('change', toggleAutoRefresh);
   getEl('cfg-refresh-interval').addEventListener('change', onRefreshIntervalChange);
   getEl('cfg-custom-min').addEventListener('input', () => { refreshIntervalMinutes = parseInt(getEl('cfg-custom-min').value) || 30; if (autoRefreshEnabled) startAutoRefresh(); saveUserSettings(); });
   getEl('cfg-auto-icon-theme')?.addEventListener('change', () => { renderPreview(); saveUserSettings(); });
+  getEl('cfg-weather-interval')?.addEventListener('change', async () => { await refreshWeatherData(); renderPreview(); saveUserSettings(); });
   getEl('icon-upload').addEventListener('change', handleImageUpload);
   setInterval(updateCountdown, 1000);
   refreshData();

@@ -162,7 +162,67 @@ body {
   border: 1px solid var(--border-color); border-radius: var(--radius-sm);
   background: #fff; outline: none;
 }
-.theme-editor { margin-top: 10px; display: grid; gap: 8px; }
+.theme-block select:disabled, .theme-editor input[type="text"]:disabled {
+  opacity: 0.5; cursor: not-allowed; background: #eef2f7; color: var(--text-muted);
+}
+.theme-block.is-disabled {
+  opacity: 0.62;
+}
+.theme-block.is-disabled * {
+  cursor: not-allowed;
+}
+.theme-detail {
+  margin-top: 8px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.theme-detail summary, .template-detail summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.theme-detail summary::-webkit-details-marker, .template-detail summary::-webkit-details-marker { display: none; }
+.theme-detail summary::after, .template-detail summary::after {
+  content: '展开';
+  font-size: 11px;
+  color: var(--primary);
+}
+.theme-detail[open] summary, .template-detail[open] summary {
+  border-bottom: 1px dashed var(--border-color);
+}
+.theme-detail[open] summary::after, .template-detail[open] summary::after {
+  content: '收起';
+}
+.theme-detail.is-disabled, .template-detail.is-disabled {
+  opacity: 0.55;
+}
+.theme-detail.is-disabled summary, .template-detail.is-disabled summary {
+  cursor: not-allowed;
+}
+.theme-detail.is-disabled summary::after, .template-detail.is-disabled summary::after {
+  content: '不可用';
+  color: var(--text-muted);
+}
+.theme-editor { padding: 10px; display: grid; gap: 8px; }
+.template-detail {
+  margin-top: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+}
+#quota-template-fields {
+  padding: 10px;
+}
+#quota-template-fields .field:last-of-type {
+  margin-bottom: 0;
+}
 .theme-row { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 8px; }
 .theme-row label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
 .theme-duo { display: grid; grid-template-columns: 1fr 0.75fr; gap: 6px; }

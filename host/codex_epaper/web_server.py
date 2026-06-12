@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 from pathlib import Path
 from typing import Optional
 
@@ -13,6 +14,7 @@ from codex_epaper.collectors.manual import ManualCollector
 from codex_epaper.collectors.codex_live import CodexLiveCollector
 from codex_epaper.models import CodexQuotaStatus
 from codex_epaper.token_usage import get_daily_token_usage
+from codex_epaper.weather_qweather import get_weather_summary
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +84,12 @@ async def api_config():
 @app.get("/api/health")
 async def api_health():
     return JSONResponse(content={"ok": True})
+
+
+@app.get("/api/weather")
+async def api_weather(interval: int = 1):
+    data = await asyncio.to_thread(get_weather_summary, interval)
+    return JSONResponse(content=data)
 
 
 _static_app = StaticFiles(directory=str(WEB_DIR), html=True)
